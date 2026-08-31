@@ -1,0 +1,118 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+}
+
+// -----------------------------------------------------------------------------
+// ENUMS
+// -----------------------------------------------------------------------------
+
+enum Role {
+  SUPERADMIN
+  OWNER
+  MANAGER
+  STAFF
+  CASHIER
+}
+
+// -----------------------------------------------------------------------------
+// MODELS
+// -----------------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  email        String   @unique
+  name         String
+  passwordHash String?
+  googleId     String?  @unique
+  avatarUrl    String?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  memberships  TenantUser[]
+  authTokens   AuthToken[]
+}
+
+model Tenant {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  slug         String   @unique
+  name         String
+  vertical     String   // e.g. "gastronomy", "beauty", "health", "realestate"
+  isActive     Boolean  @default(true)
+  settings     Json?    // Branding, colors, logo, schedule, contact, social links
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  memberships  TenantUser[]
+  features     TenantFeature[]
+  catalogItems CatalogItem[]
+}
+
+// User-Tenant Relationship (M:N Membership)
+model TenantUser {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId     String   @db.ObjectId
+  userId       String   @db.ObjectId
+  role         Role     @default(STAFF)
+  permissions  String[] // Granular permissions (custom RBAC)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId]) // A user cannot have multiple base roles in the same tenant
+}
+
+// Active Modules / Features per Tenant (FBAC)
+model TenantFeature {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId     String   @db.ObjectId
+  featureKey   String   // e.g. "bookings", "catalog", "delivery", "tables", "reviews"
+  isEnabled    Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, featureKey]) // Unique feature per tenant
+}
+
+model AuthToken {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String   @db.ObjectId
+  tokenHash    String   @unique
+  type         String   // "MAGIC_LINK", "REFRESH_TOKEN", "PASSWORD_RESET"
+  used         Boolean  @default(false)
+  revokedAt    DateTime?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Dynamic Business Catalog (Agnostic to industry: physical products or services)
+model CatalogItem {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId    String   @db.ObjectId
+  title       String
+  description String?
+  priceCents  Int
+  category    String?
+  isService   Boolean  @default(false) // true: appointments/services, false: physical product/menu
+  durationMin Int?     // Duration in minutes if service
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+  metadata    Json?    // Options, variants, tags
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
