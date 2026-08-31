@@ -62,7 +62,7 @@ export class TenantRepository {
     slug: string;
     vertical: string;
     settings?: Record<string, any>;
-    ownerId: string;
+    ownerId?: string;
     defaultFeatures: string[];
   }) {
     return this.prisma.tenant.create({
@@ -71,13 +71,15 @@ export class TenantRepository {
         slug: data.slug.trim(),
         vertical: data.vertical.trim(),
         settings: data.settings ?? {},
-        memberships: {
-          create: {
-            userId: data.ownerId,
-            role: Role.OWNER,
-            permissions: [RoleConstants.ALL_PERMISSIONS],
-          },
-        },
+        memberships: data.ownerId
+          ? {
+              create: {
+                userId: data.ownerId,
+                role: Role.OWNER,
+                permissions: [RoleConstants.ALL_PERMISSIONS],
+              },
+            }
+          : undefined,
         features: {
           createMany: {
             data: data.defaultFeatures.map((featureKey) => ({
@@ -110,6 +112,16 @@ export class TenantRepository {
       include: {
         features: true,
       },
+    });
+  }
+
+  async delete(id: string) {
+    await this.prisma.invitation.deleteMany({
+      where: { tenantId: id },
+    });
+
+    return this.prisma.tenant.delete({
+      where: { id },
     });
   }
 

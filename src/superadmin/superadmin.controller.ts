@@ -4,6 +4,7 @@ import {
   Post,
   Patch,
   Put,
+  Delete,
   Body,
   Param,
   UseGuards,
@@ -50,6 +51,12 @@ export class SuperadminController {
     @Body() dto: UpdateTenantDto,
   ) {
     return this.tenantsService.updateTenant(id, dto);
+  }
+
+  @Delete('tenants/:id')
+  @HttpCode(HttpStatus.OK)
+  async deleteTenant(@Param('id') id: string) {
+    return this.tenantsService.deleteTenant(id);
   }
 
   @Post('tenants/:id/features')

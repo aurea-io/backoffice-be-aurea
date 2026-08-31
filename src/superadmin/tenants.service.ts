@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { TenantRepository, UserRepository } from '../repositories/index.js';
+import { InvitationsService } from '../invitations/invitations.service.js';
 import { SystemConstants, RoleConstants } from '../core/constants/index.js';
 import type {
   CreateTenantDto,
@@ -15,6 +16,15 @@ import type {
   BatchFeaturesDto,
 } from './dto/index.js';
 
+const VERTICAL_DEFAULT_PACKAGES: Record<string, string[]> = {
+  gastronomy: ['catalog', 'tables', 'delivery', 'social_hub'],
+  beauty: ['catalog', 'bookings', 'social_hub', 'reviews'],
+  stock: ['catalog', 'delivery', 'social_hub'],
+  health: ['catalog', 'bookings', 'reviews'],
+  realestate: ['catalog', 'social_hub', 'reviews'],
+  general: ['catalog', 'social_hub'],
+};
+
 @Injectable()
 export class SuperadminTenantsService {
   private readonly logger = new Logger(SuperadminTenantsService.name);
@@ -22,12 +32,19 @@ export class SuperadminTenantsService {
   constructor(
     private readonly tenantRepo: TenantRepository,
     private readonly userRepo: UserRepository,
+    private readonly invitationsService: InvitationsService,
   ) {}
 
   // ── Tenant Queries ────────────────────────────────────────────────────────
 
   async findAllTenants() {
-    return this.tenantRepo.findAll();
+    const tenants = await this.tenantRepo.findAll();
+    const invitations = await this.invitationsService.findAll();
+
+    return tenants.map((t) => ({
+      ...t,
+      invitations: invitations.filter((inv) => inv.tenantId === t.id),
+    }));
   }
 
   async findTenantById(id: string) {
@@ -35,27 +52,65 @@ export class SuperadminTenantsService {
     if (!tenant) {
       throw new NotFoundException(`Tenant with ID '${id}' not found.`);
     }
-    return tenant;
+
+    const invitations = await this.invitationsService.findAll(id);
+
+    return {
+      ...tenant,
+      invitations,
+    };
   }
 
   // ── Tenant Lifecycle ──────────────────────────────────────────────────────
 
   async createTenant(data: CreateTenantDto) {
-    const owner = await this.findOwnerByEmail(data.ownerEmail);
+    const ownerEmail = data.ownerEmail.toLowerCase().trim();
     const slug = data.slug.toLowerCase().trim();
     await this.ensureSlugIsAvailable(slug);
 
+    const vertical = data.vertical.toLowerCase().trim();
+    const existingUser = await this.userRepo.findByEmail(ownerEmail);
+
+    // 1. Resolve feature package (custom or default by vertical)
+    const features =
+      data.features && data.features.length > 0
+        ? data.features.map((f) => f.toLowerCase().trim())
+        : (VERTICAL_DEFAULT_PACKAGES[vertical] || [...SystemConstants.DEFAULT_BASE_FEATURES]);
+
+    // 2. Create tenant
     const tenant = await this.tenantRepo.create({
       name: data.name,
       slug,
-      vertical: data.vertical.toLowerCase().trim(),
+      vertical,
       settings: data.settings,
-      ownerId: owner.id,
-      defaultFeatures: [...SystemConstants.DEFAULT_BASE_FEATURES],
+      ownerId: existingUser ? existingUser.id : undefined,
+      defaultFeatures: features,
     });
 
-    this.logger.log(`New tenant created: ${tenant.slug} (${tenant.name}) - Owner: ${owner.email}`);
-    return tenant;
+    // 3. If owner doesn't exist yet, generate exclusive invitation code with role OWNER
+    let invitation: any = null;
+    if (!existingUser) {
+      invitation = await this.invitationsService.create({
+        email: ownerEmail,
+        role: Role.OWNER,
+        tenantId: tenant.id,
+        daysValid: 14,
+      });
+      this.logger.log(
+        `Generated OWNER invitation code for new tenant ${tenant.name}: ${invitation.code} (sent to ${ownerEmail})`,
+      );
+    }
+
+    this.logger.log(
+      `New tenant created: ${tenant.slug} (${tenant.name}) - Owner: ${ownerEmail} (${
+        existingUser ? 'existing user' : 'invitation generated: ' + invitation?.code
+      })`,
+    );
+
+    return {
+      ...tenant,
+      invitation,
+    };
   }
 
   async updateTenant(id: string, dto: UpdateTenantDto) {
@@ -67,6 +122,22 @@ export class SuperadminTenantsService {
       isActive: typeof dto.isActive === 'boolean' ? dto.isActive : undefined,
       settings: dto.settings,
     });
+  }
+
+  async deleteTenant(id: string) {
+    const tenant = await this.ensureTenantExists(id);
+
+    if (tenant.slug === SystemConstants.SYSTEM_TENANT_SLUG) {
+      throw new BadRequestException('El tenant del sistema no puede ser eliminado.');
+    }
+
+    await this.tenantRepo.delete(id);
+    this.logger.log(`Tenant '${tenant.name}' (${tenant.slug}) eliminado definitivamente.`);
+
+    return {
+      success: true,
+      message: `Tenant '${tenant.name}' eliminado definitivamente.`,
+    };
   }
 
   // ── Feature Flag Management ───────────────────────────────────────────────

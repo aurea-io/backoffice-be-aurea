@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString, Matches } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, IsArray, Matches } from 'class-validator';
 
 export class CreateTenantDto {
   @IsString({ message: 'Tenant name must be a string' })
@@ -21,5 +21,10 @@ export class CreateTenantDto {
   ownerEmail: string;
 
   @IsOptional()
+  @IsArray()
+  features?: string[];
+
+  @IsOptional()
   settings?: Record<string, any>;
 }
+
