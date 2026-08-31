@@ -9,6 +9,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { SuperadminModule } from './superadmin/superadmin.module.js';
 import { TenantModule } from './tenant/tenant.module.js';
 import { CatalogModule } from './catalog/catalog.module.js';
+import { InvitationsModule } from './invitations/invitations.module.js';
 import { JwtAuthGuard } from './core/guards/jwt-auth.guard.js';
 
 @Module({
@@ -23,6 +24,7 @@ import { JwtAuthGuard } from './core/guards/jwt-auth.guard.js';
     SuperadminModule,
     TenantModule,
     CatalogModule,
+    InvitationsModule,
   ],
   controllers: [AppController],
   providers: [

@@ -15,6 +15,10 @@ export class RegisterDto {
   @MinLength(6, { message: 'Password must be at least 6 characters long' })
   password: string;
 
+  @IsString({ message: 'Invitation code must be a string' })
+  @IsNotEmpty({ message: 'Invitation code is required' })
+  invitationCode: string;
+
   @IsString()
   @IsOptional()
   avatarUrl?: string;

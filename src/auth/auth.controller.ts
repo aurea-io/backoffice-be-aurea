@@ -10,6 +10,7 @@ import {
   HttpStatus,
   UnauthorizedException,
   Headers,
+  UseGuards,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
@@ -25,7 +26,8 @@ import {
 } from './dto/index.js';
 import { Public } from '../core/decorators/public.decorator.js';
 import { CurrentUser } from '../core/decorators/current-user.decorator.js';
-import { AuthConstants } from '../core/constants/index.js';
+import { GoogleAuthGuard } from './guards/google-auth.guard.js';
+import { AuthConstants, SystemConstants } from '../core/constants/index.js';
 import type { JwtPayload } from '../core/interfaces/context.interface.js';
 
 @Controller('auth')
@@ -172,6 +174,33 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto);
+  }
+
+  // ── Google OAuth2 ─────────────────────────────────────────────────────────
+
+  @Public()
+  @Get('google')
+  @UseGuards(GoogleAuthGuard)
+  async googleAuth() {
+    // Redirects to Google login
+  }
+
+  @Public()
+  @Get('google/callback')
+  @UseGuards(GoogleAuthGuard)
+  async googleAuthRedirect(
+    @Req() req: Request,
+    @Res({ passthrough: false }) res: Response,
+  ) {
+    const result = await this.authService.googleLogin(req.user as any);
+    this.setRefreshCookie(res, result.refreshToken, result.refreshExpiresInMs);
+
+    const frontendUrl =
+      this.configService.get<string>('FRONTEND_URL') ||
+      SystemConstants.DEFAULT_FRONTEND_URL;
+    return res.redirect(
+      `${frontendUrl}/auth/google/callback?token=${result.accessToken}`,
+    );
   }
 
   // ── Cookie Helpers ───────────────────────────────────────────────────────

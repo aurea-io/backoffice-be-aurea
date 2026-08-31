@@ -4,6 +4,7 @@ generator client {
 
 datasource db {
   provider = "mongodb"
+  url      = env("DATABASE_URL")
 }
 
 // -----------------------------------------------------------------------------
@@ -115,4 +116,20 @@ model CatalogItem {
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
+}
+
+// Invitation & Exclusive Registration Codes
+model Invitation {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  code        String    @unique
+  email       String
+  role        Role      @default(STAFF)
+  tenantId    String?   @db.ObjectId
+  expiresAt   DateTime
+  used        Boolean   @default(false)
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([email])
 }

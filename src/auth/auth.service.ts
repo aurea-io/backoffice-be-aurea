@@ -14,6 +14,7 @@ import {
   AuthTokenRepository,
   TenantRepository,
 } from '../repositories/index.js';
+import { InvitationsService } from '../invitations/invitations.service.js';
 import {
   AuthConstants,
   SystemConstants,
@@ -39,6 +40,7 @@ export class AuthService {
     private readonly userRepo: UserRepository,
     private readonly authTokenRepo: AuthTokenRepository,
     private readonly tenantRepo: TenantRepository,
+    private readonly invitationsService: InvitationsService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
   ) {}
@@ -63,6 +65,13 @@ export class AuthService {
     const email = dto.email.toLowerCase().trim();
     await this.ensureEmailIsAvailable(email);
 
+    // 1. Validate invitation code
+    const invitation = await this.invitationsService.validateCode(
+      dto.invitationCode,
+      email,
+    );
+
+    // 2. Create user
     const passwordHash = await this.hashPassword(dto.password);
     const user = await this.userRepo.create({
       email,
@@ -71,8 +80,55 @@ export class AuthService {
       avatarUrl: dto.avatarUrl,
     });
 
-    this.logger.log(`New user registered: ${user.email}`);
-    return this.issueTokens(user.id, user.email, user.name, []);
+    // 3. Assign tenant membership if invitation is attached to a tenant
+    let memberships: any[] = [];
+    if (invitation.tenantId) {
+      const membership = await this.tenantRepo.upsertMembership(
+        invitation.tenantId,
+        user.id,
+        invitation.role,
+      );
+      memberships = [membership];
+    }
+
+    // 4. Mark invitation as used
+    await this.invitationsService.markAsUsed(invitation.id);
+
+    this.logger.log(`New user registered via invitation: ${user.email} (Role: ${invitation.role})`);
+    return this.issueTokens(user.id, user.email, user.name, memberships);
+  }
+
+  async googleLogin(googleProfile: {
+    googleId: string;
+    email: string;
+    name: string;
+    avatarUrl?: string;
+  }) {
+    const email = googleProfile.email.toLowerCase().trim();
+    let user = await this.userRepo.findWithMembershipsByEmail(email);
+
+    if (!user) {
+      // Auto-create user from Google
+      const created = await this.userRepo.create({
+        email,
+        name: googleProfile.name || email.split('@')[0],
+        googleId: googleProfile.googleId,
+        avatarUrl: googleProfile.avatarUrl,
+      });
+
+      user = await this.userRepo.findWithMembershipsByEmail(email);
+    } else if (!user.googleId) {
+      await this.userRepo.update(user.id, {
+        googleId: googleProfile.googleId,
+        avatarUrl: user.avatarUrl || googleProfile.avatarUrl,
+      });
+    }
+
+    if (!user || !user.active) {
+      throw new UnauthorizedException('User account is disabled.');
+    }
+
+    return this.issueTokens(user.id, user.email, user.name, user.memberships);
   }
 
   async refresh(rawRefreshToken: string) {

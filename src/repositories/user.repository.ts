@@ -66,7 +66,8 @@ export class UserRepository {
   async create(data: {
     email: string;
     name: string;
-    passwordHash: string;
+    passwordHash?: string;
+    googleId?: string;
     avatarUrl?: string;
   }) {
     return this.prisma.user.create({
@@ -74,6 +75,7 @@ export class UserRepository {
         email: data.email,
         name: data.name.trim(),
         passwordHash: data.passwordHash,
+        googleId: data.googleId,
         avatarUrl: data.avatarUrl,
       },
       select: AuthConstants.USER_SAFE_SELECT,
@@ -86,6 +88,8 @@ export class UserRepository {
       name: string;
       avatarUrl: string;
       passwordHash: string;
+      googleId: string;
+      active: boolean;
     }>,
   ) {
     return this.prisma.user.update({
