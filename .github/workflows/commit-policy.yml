@@ -3,4 +3,4 @@ on:
   pull_request:
 jobs:
   conventional-commits:
-    uses: aurea-io/aurea-ci/.github/workflows/commit-policy.yml@v1
+    uses: aurea-io/aurea-ci/.github/workflows/commit-policy.yml@main
