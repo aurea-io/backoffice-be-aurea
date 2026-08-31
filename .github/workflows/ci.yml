@@ -1,0 +1,16 @@
+name: CI
+on:
+  pull_request:
+  push: { branches: [main] }
+jobs:
+  ci:
+    uses: aurea-io/aurea-ci/.github/workflows/ci.yml@v1
+    with:
+      check-command: npm run lint
+      test-command: npm test
+      build-command: npm run build
+  security:
+    uses: aurea-io/aurea-ci/.github/workflows/security.yml@v1
+  commit-policy:
+    if: github.event_name == 'pull_request'
+    uses: aurea-io/aurea-ci/.github/workflows/commit-policy.yml@v1

@@ -1,0 +1,7 @@
+name: Security
+on:
+  pull_request:
+  push: { branches: [main] }
+jobs:
+  security:
+    uses: aurea-io/aurea-ci/.github/workflows/security.yml@v1
