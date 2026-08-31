@@ -11,6 +11,6 @@ export class SystemConstants {
   static readonly DEFAULT_PORT = 3000;
   static readonly DEFAULT_FRONTEND_URL = 'http://localhost:5173';
   static readonly DEFAULT_JWT_SECRET =
-    'aurea_dev_super_secret_jwt_key_change_in_production_123456789';
+    'local-development-key-change-me';
   static readonly GLOBAL_API_PREFIX = 'api';
 }
