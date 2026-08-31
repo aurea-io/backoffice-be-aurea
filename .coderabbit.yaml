@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: es-AR
+reviews:
+  profile: chill
+  request_changes_workflow: true
+  high_level_summary: true
+  poem: false
+  path_instructions:
+    - path: "src/core/**"
+      instructions: |
+        Revisar autenticación, autorización, aislamiento por tenant, scopes de plataforma y no confiar en datos del request o del JWT para permisos.
+    - path: "src/public/**"
+      instructions: |
+        Revisar que los endpoints públicos no filtren datos entre tenants, que el CSS generado sea seguro, cacheable y no permita CSS arbitrario.
+    - path: "src/**"
+      instructions: |
+        Revisar validación de entrada, errores HTTP consistentes, consultas tenant-scoped, logs sin secretos y compatibilidad con Prisma MongoDB.
+    - path: "prisma/**"
+      instructions: |
+        Revisar índices, relaciones, retención de datos, concurrencia y que los cambios de esquema sean compatibles con MongoDB.
+    - path: "test/**"
+      instructions: |
+        Exigir pruebas de acceso cruzado entre tenants, roles insuficientes, capabilities desactivadas y errores de configuración.
+chat:
+  auto_reply: true
