@@ -22,12 +22,18 @@ import {
 } from './dto/index.js';
 import { Roles } from '../core/decorators/roles.decorator.js';
 import { RolesGuard } from '../core/guards/roles.guard.js';
+import { MODULE_CATALOG } from '../core/constants/module-catalog.js';
 
 @Controller('superadmin')
 @UseGuards(RolesGuard)
 @Roles(Role.SUPERADMIN)
 export class SuperadminController {
   constructor(private readonly tenantsService: SuperadminTenantsService) {}
+
+  @Get('modules')
+  async getModuleCatalog() {
+    return { version: MODULE_CATALOG.length, modules: MODULE_CATALOG };
+  }
 
   @Get('tenants')
   async getAllTenants() {

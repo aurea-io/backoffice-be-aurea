@@ -4,6 +4,7 @@ import {
   ExecutionContext,
   UnauthorizedException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { AuthService } from '../../auth/auth.service.js';
 
@@ -36,9 +37,7 @@ export class TenantContextGuard implements CanActivate {
     );
 
     if (!currentContext) {
-      throw new UnauthorizedException(
-        'You do not have access to this tenant or it is inactive.',
-      );
+      throw new ForbiddenException('Tenant access denied.');
     }
 
     request.tenantContext = currentContext;

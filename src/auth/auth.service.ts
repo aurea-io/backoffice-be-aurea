@@ -3,6 +3,7 @@ import {
   UnauthorizedException,
   ConflictException,
   BadRequestException,
+  ForbiddenException,
   Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -402,7 +403,7 @@ export class AuthService {
       }
     }
 
-    throw new UnauthorizedException('You do not have access to this tenant.');
+    throw new ForbiddenException('Tenant access denied.');
   }
 
   private formatUserTenants(memberships: any[]) {
