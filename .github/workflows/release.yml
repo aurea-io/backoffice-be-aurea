@@ -8,5 +8,5 @@ permissions:
   actions: write
 jobs:
   release:
-    uses: aurea-io/aurea-ci/.github/workflows/release.yml@main
+    uses: aurea-io/aurea-ci/.github/workflows/release.yml@codex/central-ci-notifications
     secrets: inherit
