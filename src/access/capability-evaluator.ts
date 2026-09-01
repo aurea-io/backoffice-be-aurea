@@ -22,6 +22,7 @@ export interface CapabilityEvaluationContext {
   surface: CapabilitySurface;
   tenantStatus: 'active' | 'suspended' | 'deleted';
   subscriptionAllowed: boolean;
+  lifecycleAllowed?: boolean;
   planRules?: CapabilityRule[];
   tenantRules?: CapabilityRule[];
   ownerOverrides?: CapabilityRule[];
@@ -48,7 +49,7 @@ export class CapabilityEvaluator {
     const resolve = (entry: CapabilityCatalogEntry, visiting = new Set<string>()): boolean => {
       if (map[entry.key] !== undefined) return map[entry.key];
       if (visiting.has(entry.key)) return (map[entry.key] = false);
-      if (context.tenantStatus !== 'active' || !context.subscriptionAllowed) return (map[entry.key] = false);
+      if (context.tenantStatus !== 'active' || !context.subscriptionAllowed || context.lifecycleAllowed === false) return (map[entry.key] = false);
       if (entry.status !== 'active') return (map[entry.key] = false);
       const decision = this.resolveRule(entry.key, context);
       if (decision === false) return (map[entry.key] = false);
