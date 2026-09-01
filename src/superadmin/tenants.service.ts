@@ -169,17 +169,9 @@ export class SuperadminTenantsService {
       throw new NotFoundException(`User with email '${targetEmail}' not found.`);
     }
 
-    const systemTenant = await this.tenantRepo.findOrCreateSystemTenant(
-      SystemConstants.SYSTEM_TENANT_SLUG,
-      SystemConstants.SYSTEM_TENANT_NAME,
-      SystemConstants.SYSTEM_VERTICAL,
-    );
-
-    const membership = await this.tenantRepo.upsertMembership(
-      systemTenant.id,
+    const membership = await this.tenantRepo.upsertPlatformMembership(
       user.id,
-      Role.SUPERADMIN,
-      [RoleConstants.ALL_PERMISSIONS],
+      'SUPERADMIN',
     );
 
     this.logger.log(`SUPERADMIN role granted globally to: ${targetEmail}`);
