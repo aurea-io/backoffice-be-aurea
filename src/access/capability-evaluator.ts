@@ -86,7 +86,12 @@ export class CapabilityEvaluator {
   }
 
   private findRule(rules: CapabilityRule[] | undefined, key: string): CapabilityRule | undefined {
-    return rules?.find((rule) => rule.key === key || (rule.key.endsWith('.*') && key.startsWith(rule.key.slice(0, -1))));
+    return rules?.find((rule) => {
+      if (rule.key === key) return true;
+      if (!rule.key.endsWith('.*')) return false;
+      const prefix = rule.key.slice(0, -2);
+      return key === prefix || key.startsWith(`${prefix}.`);
+    });
   }
 
   private parentKeys(key: string): string[] {
