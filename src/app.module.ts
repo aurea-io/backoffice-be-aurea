@@ -14,6 +14,7 @@ import { JwtAuthGuard } from './core/guards/jwt-auth.guard.js';
 import { HealthModule } from './health/health.module.js';
 import { ThemeModule } from './theme/theme.module.js';
 import { BootstrapModule } from './bootstrap/bootstrap.module.js';
+import { AuditModule } from './audit/audit.module.js';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { BootstrapModule } from './bootstrap/bootstrap.module.js';
     HealthModule,
     ThemeModule,
     BootstrapModule,
+    AuditModule,
   ],
   controllers: [AppController],
   providers: [
