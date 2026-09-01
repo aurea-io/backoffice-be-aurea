@@ -18,6 +18,8 @@ export class PermissionsGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const tenant: TenantContext | undefined = request.tenantContext;
     if (!tenant) throw new ForbiddenException('Tenant context not found.');
+    if (tenant.role === 'OWNER' || tenant.role === 'SUPERADMIN') return true;
+
     const granted = tenant.permissions ?? [];
     if (hasPermissions(granted, required)) {
       return true;
