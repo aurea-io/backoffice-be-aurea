@@ -127,6 +127,7 @@ model ModuleCatalogEntry {
   moduleKey           String
   sectionKey          String
   pageKey             String
+  scope               String
   label               String
   status              String
   requiredRole        String?
