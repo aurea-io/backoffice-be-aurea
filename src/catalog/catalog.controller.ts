@@ -17,14 +17,16 @@ import { CreateCatalogItemDto, UpdateCatalogItemDto } from './dto/index.js';
 import { TenantContextGuard } from '../core/guards/tenant.guard.js';
 import { FeatureGuard } from '../core/guards/feature.guard.js';
 import { RolesGuard } from '../core/guards/roles.guard.js';
+import { PermissionsGuard } from '../core/guards/permissions.guard.js';
 import { RequireFeature } from '../core/decorators/require-feature.decorator.js';
 import { Roles } from '../core/decorators/roles.decorator.js';
+import { RequirePermissions } from '../core/decorators/permissions.decorator.js';
 import { CurrentTenant } from '../core/decorators/tenant-context.decorator.js';
 import { FeatureConstants } from '../core/constants/index.js';
 import type { TenantContext } from '../core/interfaces/context.interface.js';
 
 @Controller('catalog')
-@UseGuards(TenantContextGuard, FeatureGuard, RolesGuard)
+@UseGuards(TenantContextGuard, FeatureGuard, RolesGuard, PermissionsGuard)
 @RequireFeature(FeatureConstants.CATALOG)
 export class CatalogController {
   constructor(private readonly catalogService: CatalogService) {}
@@ -51,6 +53,7 @@ export class CatalogController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @Roles(Role.OWNER, Role.MANAGER)
+  @RequirePermissions('catalog:write')
   async create(
     @CurrentTenant() tenant: TenantContext,
     @Body() dto: CreateCatalogItemDto,
@@ -60,6 +63,7 @@ export class CatalogController {
 
   @Patch(':id')
   @Roles(Role.OWNER, Role.MANAGER)
+  @RequirePermissions('catalog:write')
   async update(
     @CurrentTenant() tenant: TenantContext,
     @Param('id') id: string,
@@ -71,6 +75,7 @@ export class CatalogController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @Roles(Role.OWNER, Role.MANAGER)
+  @RequirePermissions('catalog:write')
   async remove(
     @CurrentTenant() tenant: TenantContext,
     @Param('id') id: string,
