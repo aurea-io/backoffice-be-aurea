@@ -173,7 +173,7 @@ export class AuthService {
       AuthConstants.MAGIC_LINK_EXPIRATION_MS,
     );
 
-    this.logger.log(`Magic link generated for ${email}: token=${rawToken}`);
+    this.logger.log(`Magic link requested for ${email}`);
     return { sent: true };
   }
 
@@ -206,7 +206,7 @@ export class AuthService {
       AuthConstants.PASSWORD_RESET_EXPIRATION_MS,
     );
 
-    this.logger.log(`Password reset token generated for ${email}: token=${rawToken}`);
+    this.logger.log(`Password reset requested for ${email}`);
     return { sent: true };
   }
 

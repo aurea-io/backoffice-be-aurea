@@ -198,9 +198,8 @@ export class AuthController {
     const frontendUrl =
       this.configService.get<string>('FRONTEND_URL') ||
       SystemConstants.DEFAULT_FRONTEND_URL;
-    return res.redirect(
-      `${frontendUrl}/auth/google/callback?token=${result.accessToken}`,
-    );
+    // The refresh cookie is the secure handoff; the access token never enters a URL.
+    return res.redirect(`${frontendUrl}/auth/google/callback`);
   }
 
   // ── Cookie Helpers ───────────────────────────────────────────────────────
