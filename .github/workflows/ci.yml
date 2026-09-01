@@ -1,0 +1,12 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  ci:
+    uses: aurea-io/aurea-ci/.github/workflows/ci.yml@main
+    with:
+      project-type: node-backend
