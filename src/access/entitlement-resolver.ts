@@ -28,13 +28,13 @@ export class EntitlementResolver {
     const tenant = this.match(context.tenantRules, key);
     if (tenant) return { key, effect: tenant.effect, source: 'tenant_setting' };
     const plan = this.match(context.planRules, key);
-    const effect = plan?.effect ?? context.defaultEffect ?? 'deny';
-    return { key, effect, source: plan?.source ?? 'plan' };
+    if (plan) return { key, effect: plan.effect, source: plan.source ?? 'plan' };
+    return { key, effect: context.defaultEffect ?? 'deny', source: 'default' };
   }
 
   isEnabled(key: string, context: EntitlementContext): boolean {
     if (this.resolve(key, context).effect !== 'allow') return false;
-    return [...this.parents(key), key].every((parent) => {
+    return this.parents(key).every((parent) => {
       const result = this.resolve(parent, context);
       return result.effect === 'allow' && (context.enabledParents?.has(parent) ?? true);
     });
