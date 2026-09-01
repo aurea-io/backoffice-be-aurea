@@ -6,36 +6,41 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { REQUIRE_FEATURE_KEY } from '../decorators/require-feature.decorator.js';
-import type { TenantContext } from '../interfaces/context.interface.js';
+import { CapabilityService } from '../../access/capability.service.js';
+import type { JwtPayload, TenantContext } from '../interfaces/context.interface.js';
 
 @Injectable()
 export class FeatureGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+  constructor(
+    private readonly reflector: Reflector,
+    private readonly capabilityService: CapabilityService,
+  ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const requiredFeature = this.reflector.getAllAndOverride<string>(
       REQUIRE_FEATURE_KEY,
       [context.getHandler(), context.getClass()],
     );
 
-    if (!requiredFeature) {
-      return true;
-    }
+    if (!requiredFeature) return true;
 
     const request = context.switchToHttp().getRequest();
     const tenantContext: TenantContext | undefined = request.tenantContext;
+    const user: JwtPayload | undefined = request.user;
 
-    if (!tenantContext) {
-      throw new ForbiddenException(
-        'Tenant context not found. Ensure the x-tenant-id header is provided.',
-      );
+    if (!tenantContext || !user) {
+      throw new ForbiddenException('Tenant and authenticated user context are required.');
     }
 
-    const hasFeature = tenantContext.activeFeatures.includes(requiredFeature);
+    const hasFeature = await this.capabilityService.isEnabled(
+      user.sub,
+      tenantContext.tenantId,
+      requiredFeature,
+    );
 
     if (!hasFeature) {
       throw new ForbiddenException(
-        `This tenant does not have the '${requiredFeature}' module enabled or subscribed.`,
+        `This tenant does not have the '${requiredFeature}' capability enabled.`,
       );
     }
 
