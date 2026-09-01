@@ -96,13 +96,14 @@ jobs:
     name: Notify image
     if: ${{ always() && needs.verify.result != 'skipped' }}
     needs: [verify, publish]
-    uses: aurea-io/aurea-ci/.github/workflows/notify.yml@e3f5df6082c46e81a53775e8e8dcf6fa709282dd
+    uses: aurea-io/aurea-ci/.github/workflows/notify.yml@85ebac96fbed95ec84ddd639732c787166636301
     with:
       event-type: image
       environment: production
       image: ghcr.io/aurea-io/backoffice-be-aurea
-      version: ${{ github.sha }}
+      version: latest
       source-commit: ${{ github.sha }}
+      commit-message: ${{ github.event.head_commit.message || 'workflow dispatch' }}
       status: ${{ needs.publish.result == 'success' && needs.verify.result == 'success' && 'success' || 'failure' }}
     secrets:
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -115,11 +116,13 @@ jobs:
     name: Notify deploy
     if: ${{ always() && needs.deploy.result != 'skipped' }}
     needs: [publish, deploy]
-    uses: aurea-io/aurea-ci/.github/workflows/notify.yml@e3f5df6082c46e81a53775e8e8dcf6fa709282dd
+    uses: aurea-io/aurea-ci/.github/workflows/notify.yml@85ebac96fbed95ec84ddd639732c787166636301
     with:
       event-type: deploy
       environment: production
+      version: latest
       source-commit: ${{ github.sha }}
+      commit-message: ${{ github.event.head_commit.message || 'workflow dispatch' }}
       status: ${{ needs.deploy.outputs.configured == 'true' && needs.deploy.result == 'success' && 'success' || needs.deploy.outputs.configured == 'false' && 'skipped' || 'failure' }}
       reason: ${{ needs.deploy.outputs.reason }}
     secrets:
