@@ -23,8 +23,11 @@ describe('EntitlementResolver', () => {
     expect(resolver.isEnabled('services.bookings', {
       planRules: [{ key: 'services.*', effect: 'deny' }],
       tenantRules: [{ key: 'services.bookings', effect: 'allow' }],
-      ownerOverrides: [{ key: 'services', effect: 'allow' }],
     })).toBe(true);
+  });
+
+  it('reports default provenance when no plan rule matches', () => {
+    expect(resolver.resolve('payments', {}).source).toBe('default');
   });
 
   it('defaults to deny and never invents an allow', () => {
