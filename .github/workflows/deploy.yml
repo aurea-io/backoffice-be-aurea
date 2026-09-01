@@ -63,47 +63,27 @@ jobs:
           cache-to: type=gha,mode=max
 
   deploy:
-    name: Deploy backend server
+    name: Deploy backend to Render
     if: ${{ vars.AUREA_DEPLOY_ENABLED == 'true' }}
     needs: publish
     runs-on: ubuntu-latest
     steps:
-      - name: Check deploy configuration
+      - name: Check Render configuration
         id: config
         env:
-          DEPLOY_HOST: ${{ secrets.DEPLOY_SSH_HOST }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_SSH_USER }}
-          DEPLOY_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-          DEPLOY_ENV_FILE: ${{ secrets.DEPLOY_ENV_FILE }}
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
         run: |
-          if [[ -n "$DEPLOY_HOST" && -n "$DEPLOY_USER" && -n "$DEPLOY_KEY" && -n "$DEPLOY_ENV_FILE" ]]; then
+          if [[ -n "$RENDER_DEPLOY_HOOK_URL" ]]; then
             echo 'configured=true' >> "$GITHUB_OUTPUT"
           else
             echo 'configured=false' >> "$GITHUB_OUTPUT"
-            echo 'Deploy backend omitido: faltan credenciales o DEPLOY_ENV_FILE.'
+            echo 'Deploy backend omitido: falta RENDER_DEPLOY_HOOK_URL.'
           fi
-      - uses: appleboy/ssh-action@v1.2.2
+      - name: Trigger Render deploy
         if: steps.config.outputs.configured == 'true'
         env:
-          IMAGE: ${{ env.IMAGE }}:${{ github.sha }}
-          CONTAINER_NAME: ${{ env.CONTAINER_NAME }}
-          APP_PORT: ${{ env.APP_PORT }}
-          DEPLOY_ENV_FILE: ${{ secrets.DEPLOY_ENV_FILE }}
-        with:
-          host: ${{ secrets.DEPLOY_SSH_HOST }}
-          username: ${{ secrets.DEPLOY_SSH_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          port: ${{ secrets.DEPLOY_SSH_PORT || 22 }}
-          envs: IMAGE,CONTAINER_NAME,APP_PORT,DEPLOY_ENV_FILE
-          script_stop: true
-          script: |
-            set -eu
-            docker pull "$IMAGE"
-            docker rm -f "$CONTAINER_NAME" 2>/dev/null || true
-            docker run -d --name "$CONTAINER_NAME" --restart unless-stopped \
-              --env-file "$DEPLOY_ENV_FILE" -p "$APP_PORT:$APP_PORT" "$IMAGE"
-            sleep 5
-            test "$(docker inspect -f '{{.State.Running}}' "$CONTAINER_NAME")" = true
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: curl --fail --silent --show-error --request POST "$RENDER_DEPLOY_HOOK_URL"
 
   notify-image:
     name: Notify image
