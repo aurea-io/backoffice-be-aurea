@@ -1,7 +1,9 @@
 FROM node:22-bookworm-slim
 
 WORKDIR /app
-ENV NODE_ENV=production
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends openssl \
+  && rm -rf /var/lib/apt/lists/*
 
 COPY package*.json ./
 COPY prisma ./prisma
@@ -14,6 +16,8 @@ COPY src ./src
 RUN npm run build \
   && npm prune --omit=dev \
   && npm cache clean --force
+
+ENV NODE_ENV=production
 
 EXPOSE 3001
 CMD ["node", "dist/main.js"]
