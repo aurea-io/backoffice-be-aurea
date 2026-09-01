@@ -31,7 +31,7 @@ export class CapabilityService {
             features: true,
             entitlements: { where: { isActive: true } },
             subscriptions: {
-              where: { status: { in: ['active', 'trialing'] } },
+              
               orderBy: { createdAt: 'desc' },
               take: 1,
             },
@@ -66,7 +66,8 @@ export class CapabilityService {
       {
         surface,
         tenantStatus: membership.tenant.isActive ? 'active' : 'suspended',
-        subscriptionAllowed: membership.tenant.subscriptions.length > 0,
+        subscriptionAllowed: this.subscriptionAllowsAccess(membership.tenant, surface),
+        lifecycleAllowed: this.lifecycleAllowsAccess(membership.tenant, surface),
         planRules: entitlements.filter((rule) => rule.source === 'plan' || rule.source === 'migration'),
         tenantRules: [...legacyFeatureRules, ...entitlements.filter((rule) => rule.source === 'tenant_setting')],
         ownerOverrides:
@@ -84,6 +85,18 @@ export class CapabilityService {
   async isEnabled(userId: string, tenantId: string, capabilityKey: string): Promise<boolean> {
     const result = await this.evaluateForTenant(userId, tenantId);
     return result.map[capabilityKey] === true;
+  }
+
+  private subscriptionAllowsAccess(tenant: any, surface: 'public' | 'private'): boolean {
+    const subscription = tenant.subscriptions[0];
+    if (subscription?.status === 'active' || subscription?.status === 'trialing') return true;
+    return surface === 'public' && !!tenant.publicAccessUntil && tenant.publicAccessUntil > new Date();
+  }
+
+  private lifecycleAllowsAccess(tenant: any, surface: 'public' | 'private'): boolean {
+    if (surface === 'private' && tenant.maintenanceMode) return false;
+    if (!tenant.deprecatedAt || tenant.deprecatedAt > new Date()) return true;
+    return surface === 'public' && !!tenant.publicAccessUntil && tenant.publicAccessUntil > new Date();
   }
 
   private toCatalogEntry(entry: any): CapabilityCatalogEntry {
