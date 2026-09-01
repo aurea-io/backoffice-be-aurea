@@ -18,7 +18,7 @@ export class AuditService {
   constructor(private readonly prisma: PrismaService) {}
 
   async record(event: AuditRecord) {
-    return this.prisma.auditEvent.create({ data: event });
+    return this.prisma.auditEvent.create({ data: event as any });
   }
 
   async listForTenant(tenantId: string, limit = 100) {
