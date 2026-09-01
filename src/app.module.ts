@@ -11,6 +11,7 @@ import { TenantModule } from './tenant/tenant.module.js';
 import { CatalogModule } from './catalog/catalog.module.js';
 import { InvitationsModule } from './invitations/invitations.module.js';
 import { JwtAuthGuard } from './core/guards/jwt-auth.guard.js';
+import { HealthModule } from './health/health.module.js';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { JwtAuthGuard } from './core/guards/jwt-auth.guard.js';
     TenantModule,
     CatalogModule,
     InvitationsModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [
