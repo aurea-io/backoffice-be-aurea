@@ -39,7 +39,7 @@ export class SuperadminTenantsService {
 
   async findAllTenants() {
     const tenants = await this.tenantRepo.findAll();
-    const invitations = await this.invitationsService.findAll();
+    const invitations = await this.invitationsService.findAll(undefined, undefined, true);
 
     return tenants.map((t) => ({
       ...t,
@@ -53,7 +53,7 @@ export class SuperadminTenantsService {
       throw new NotFoundException(`Tenant with ID '${id}' not found.`);
     }
 
-    const invitations = await this.invitationsService.findAll(id);
+    const invitations = await this.invitationsService.findAll(undefined, id, true);
 
     return {
       ...tenant,
@@ -93,9 +93,8 @@ export class SuperadminTenantsService {
       invitation = await this.invitationsService.create({
         email: ownerEmail,
         role: Role.OWNER,
-        tenantId: tenant.id,
         daysValid: 14,
-      });
+      }, undefined, tenant.id, true);
       this.logger.log(
         `Generated OWNER invitation code for new tenant ${tenant.name}: ${invitation.code} (sent to ${ownerEmail})`,
       );

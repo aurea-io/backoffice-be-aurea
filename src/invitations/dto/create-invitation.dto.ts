@@ -1,4 +1,4 @@
-import { IsEmail, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsEmail, IsEnum, IsInt, IsNotEmpty, IsOptional, Max, Min } from 'class-validator';
 import { Role } from '@prisma/client';
 
 export class CreateInvitationDto {
@@ -6,13 +6,9 @@ export class CreateInvitationDto {
   @IsNotEmpty({ message: 'Email address is required' })
   email: string;
 
-  @IsEnum(Role, { message: 'Role must be a valid role (OWNER, MANAGER, STAFF, CASHIER, SUPERADMIN)' })
+  @IsEnum(Role, { message: 'Role must be a valid tenant role (OWNER, MANAGER, STAFF, CASHIER)' })
   @IsOptional()
   role?: Role = Role.STAFF;
-
-  @IsString()
-  @IsOptional()
-  tenantId?: string;
 
   @IsInt()
   @Min(1)
