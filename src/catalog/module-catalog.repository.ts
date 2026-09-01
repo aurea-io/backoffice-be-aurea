@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { CatalogContract, CatalogModuleContract } from './contracts/index.js';
 import { validateCatalogContract } from './contracts/index.js';
+import type { Prisma } from '@prisma/client';
 import type { PrismaService } from '../prisma/prisma.service.js';
 
 export interface ModuleCatalogEntryInput {
@@ -14,7 +15,7 @@ export interface ModuleCatalogEntryInput {
   requiredRole?: string;
   permissions: string[];
   dependencies: string[];
-  compatibility: Record<string, unknown>;
+  compatibility: Prisma.InputJsonObject;
   catalogVersion: string;
 }
 
@@ -33,7 +34,7 @@ export function catalogEntries(contract: CatalogContract): ModuleCatalogEntryInp
       requiredRole: fn.requiredRole,
       permissions: fn.permissions ?? [],
       dependencies: fn.dependencies ?? [],
-      compatibility: fn.compatibility,
+      compatibility: fn.compatibility as Prisma.InputJsonObject,
       catalogVersion: validated.version,
     })),
   ]);
@@ -51,7 +52,7 @@ function toModuleEntry(module: CatalogModuleContract, version: string): ModuleCa
     requiredRole: module.requiredRole,
     permissions: [],
     dependencies: module.dependencies ?? [],
-    compatibility: module.compatibility,
+    compatibility: module.compatibility as Prisma.InputJsonObject,
     catalogVersion: version,
   };
 }
