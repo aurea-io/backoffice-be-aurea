@@ -70,12 +70,12 @@ export class ModuleCatalogRepository {
     await this.prisma.$transaction([
       this.prisma.moduleCatalogEntry.updateMany({
         where: { key: { notIn: keys } },
-        data: { status: 'deprecated', catalogVersion: contract.version },
+        data: { isArchived: true, catalogVersion: contract.version },
       }),
       ...entries.map((entry) => this.prisma.moduleCatalogEntry.upsert({
         where: { key: entry.key },
-        create: { ...entry, requiredRole: entry.requiredRole ?? null },
-        update: { ...entry, requiredRole: entry.requiredRole ?? null },
+        create: { ...entry, isArchived: false, requiredRole: entry.requiredRole ?? null },
+        update: { ...entry, isArchived: false, requiredRole: entry.requiredRole ?? null },
       })),
     ]);
     return entries;
@@ -83,6 +83,7 @@ export class ModuleCatalogRepository {
 
   findTree() {
     return this.prisma.moduleCatalogEntry.findMany({
+      where: { isArchived: false },
       orderBy: [{ sectionKey: 'asc' }, { pageKey: 'asc' }, { kind: 'asc' }, { key: 'asc' }],
     });
   }
