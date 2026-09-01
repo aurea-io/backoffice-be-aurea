@@ -91,6 +91,8 @@ export class CapabilityEvaluator {
 
   private parentKeys(key: string): string[] {
     const parts = key.split('.');
-    return parts.slice(1, -1).map((_, index) => parts.slice(0, index + 1).join('.'));
+    return Array.from({ length: Math.max(parts.length - 1, 0) }, (_, index) =>
+      parts.slice(0, index + 1).join('.'),
+    );
   }
 }
