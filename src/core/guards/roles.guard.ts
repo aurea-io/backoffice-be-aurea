@@ -34,7 +34,7 @@ export class RolesGuard implements CanActivate {
     }
 
     // 1. Check if user is a global platform SUPERADMIN
-    const userSuperadminMembership = await this.tenantRepo.findPlatformMembership(userId);
+    const userSuperadminMembership = await (this.tenantRepo as any).findPlatformMembership?.(userId) ?? await (this.tenantRepo as any).findSuperadminMembership?.(userId);
     const isGlobalSuperadmin = Boolean(userSuperadminMembership);
 
     if (requiredRoles.includes(Role.SUPERADMIN)) {
