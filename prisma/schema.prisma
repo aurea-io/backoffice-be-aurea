@@ -35,7 +35,7 @@ model User {
   updatedAt    DateTime @updatedAt
 
   memberships  TenantUser[]
-  authTokens   AuthToken[]
+  authTokens   AuthToken[] @relation("UserAuthTokens")
   platformMemberships PlatformMembership[]
 }
 
@@ -124,7 +124,7 @@ model AuthToken {
   expiresAt    DateTime
   createdAt    DateTime @default(now())
 
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User     @relation("UserAuthTokens", fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // Dynamic Business Catalog (Agnostic to industry: physical products or services)
