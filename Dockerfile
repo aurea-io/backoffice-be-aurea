@@ -15,9 +15,11 @@ COPY nest-cli.json tsconfig*.json .prettierrc oxlint.json ./
 COPY src ./src
 RUN npm run build \
   && npm prune --omit=dev \
-  && npm cache clean --force
+  && npm cache clean --force \
+  && chown -R node:node /app
 
 ENV NODE_ENV=production
+USER node
 
 EXPOSE 3001
 CMD ["node", "dist/main.js"]
