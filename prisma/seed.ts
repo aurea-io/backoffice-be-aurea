@@ -7,9 +7,12 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Iniciando seed para Aurea Backoffice...');
 
-  const email = 'admin@aurea.com';
-  const password = 'Admin1234!';
-  const name = 'Superadmin Aurea';
+  const email = process.env.AUREA_ADMIN_EMAIL;
+  const password = process.env.AUREA_ADMIN_PASSWORD;
+  const name = process.env.AUREA_ADMIN_NAME || 'Superadmin Aurea';
+  if (!email || !password) {
+    throw new Error('AUREA_ADMIN_EMAIL and AUREA_ADMIN_PASSWORD are required for the seed.');
+  }
   const saltRounds = 10;
 
   const passwordHash = await bcrypt.hash(password, saltRounds);
@@ -55,35 +58,14 @@ async function main() {
 
   console.log(`✅ Tenant del Sistema: ${systemTenant.name} (Slug: ${systemTenant.slug})`);
 
-  // 3. Find or Create Superadmin Membership
-  const existingMembership = await prisma.tenantUser.findUnique({
-    where: {
-      tenantId_userId: {
-        tenantId: systemTenant.id,
-        userId: adminUser.id,
-      },
-    },
+  // 3. Persist platform scope membership (not a tenant role)
+  const platformMembership = await prisma.platformMembership.upsert({
+    where: { userId_roleKey: { userId: adminUser.id, roleKey: 'SUPERADMIN' } },
+    update: { isActive: true },
+    create: { userId: adminUser.id, roleKey: 'SUPERADMIN', isActive: true },
   });
 
-  let membership;
-  if (existingMembership) {
-    membership = await prisma.tenantUser.update({
-      where: { id: existingMembership.id },
-      data: { role: Role.SUPERADMIN, permissions: ['*'], isActive: true },
-    });
-  } else {
-    membership = await prisma.tenantUser.create({
-      data: {
-        tenantId: systemTenant.id,
-        userId: adminUser.id,
-        role: Role.SUPERADMIN,
-        permissions: ['*'],
-        isActive: true,
-      },
-    });
-  }
-
-  console.log(`✅ Membresía asignada con rol: ${membership.role} y permisos ['*']`);
+  console.log(`✅ Membresía de plataforma asignada: ${platformMembership.roleKey}`);
 
   // 4. Find or Create Demo Tenant
   let demoTenant = await prisma.tenant.findUnique({ where: { slug: 'de-santas' } });
@@ -174,7 +156,7 @@ async function main() {
   console.log('🎉 Seed completado exitosamente!');
   console.log('Credenciales de acceso:');
   console.log(`📧 Email:    ${email}`);
-  console.log(`🔑 Password: ${password}`);
+  console.log('🔑 Password: provista mediante AUREA_ADMIN_PASSWORD');
   console.log('=========================================\n');
 }
 
