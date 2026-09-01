@@ -67,6 +67,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   deploy:
+    environment: production
     name: Deploy backend to Render
     needs: publish
     runs-on: ubuntu-latest
