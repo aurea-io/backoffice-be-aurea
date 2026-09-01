@@ -72,6 +72,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       configured: ${{ steps.config.outputs.configured }}
+      reason: ${{ steps.config.outputs.reason }}
     steps:
       - name: Check Render configuration
         id: config
@@ -82,6 +83,7 @@ jobs:
             echo 'configured=true' >> "$GITHUB_OUTPUT"
           else
             echo 'configured=false' >> "$GITHUB_OUTPUT"
+            echo 'reason=Falta el secret RENDER_DEPLOY_HOOK_URL en el repositorio o en la organización.' >> "$GITHUB_OUTPUT"
             echo 'Deploy backend omitido: falta RENDER_DEPLOY_HOOK_URL.'
           fi
       - name: Trigger Render deploy
@@ -94,7 +96,7 @@ jobs:
     name: Notify image
     if: ${{ always() && needs.verify.result != 'skipped' }}
     needs: [verify, publish]
-    uses: aurea-io/aurea-ci/.github/workflows/notify.yml@2dcbe539976acebedec1af9b4beaddba51617225
+    uses: aurea-io/aurea-ci/.github/workflows/notify.yml@e3f5df6082c46e81a53775e8e8dcf6fa709282dd
     with:
       event-type: image
       environment: production
@@ -113,12 +115,13 @@ jobs:
     name: Notify deploy
     if: ${{ always() && needs.deploy.result != 'skipped' }}
     needs: [publish, deploy]
-    uses: aurea-io/aurea-ci/.github/workflows/notify.yml@2dcbe539976acebedec1af9b4beaddba51617225
+    uses: aurea-io/aurea-ci/.github/workflows/notify.yml@e3f5df6082c46e81a53775e8e8dcf6fa709282dd
     with:
       event-type: deploy
       environment: production
       source-commit: ${{ github.sha }}
       status: ${{ needs.deploy.outputs.configured == 'true' && needs.deploy.result == 'success' && 'success' || needs.deploy.outputs.configured == 'false' && 'skipped' || 'failure' }}
+      reason: ${{ needs.deploy.outputs.reason }}
     secrets:
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
