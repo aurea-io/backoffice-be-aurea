@@ -64,21 +64,26 @@ jobs:
 
   deploy:
     name: Deploy backend server
+    if: ${{ vars.AUREA_DEPLOY_ENABLED == 'true' }}
     needs: publish
     runs-on: ubuntu-latest
     steps:
       - name: Check deploy configuration
+        id: config
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_SSH_HOST }}
           DEPLOY_USER: ${{ secrets.DEPLOY_SSH_USER }}
           DEPLOY_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           DEPLOY_ENV_FILE: ${{ secrets.DEPLOY_ENV_FILE }}
         run: |
-          test -n "$DEPLOY_HOST"
-          test -n "$DEPLOY_USER"
-          test -n "$DEPLOY_KEY"
-          test -n "$DEPLOY_ENV_FILE"
+          if [[ -n "$DEPLOY_HOST" && -n "$DEPLOY_USER" && -n "$DEPLOY_KEY" && -n "$DEPLOY_ENV_FILE" ]]; then
+            echo 'configured=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'configured=false' >> "$GITHUB_OUTPUT"
+            echo 'Deploy backend omitido: faltan credenciales o DEPLOY_ENV_FILE.'
+          fi
       - uses: appleboy/ssh-action@v1.2.2
+        if: steps.config.outputs.configured == 'true'
         env:
           IMAGE: ${{ env.IMAGE }}:${{ github.sha }}
           CONTAINER_NAME: ${{ env.CONTAINER_NAME }}
@@ -102,7 +107,7 @@ jobs:
 
   notify:
     name: Notify Discord
-    if: always()
+    if: ${{ always() && (vars.AUREA_DEPLOY_ENABLED == 'true' || needs.verify.result != 'success' || needs.publish.result != 'success') }}
     needs: [verify, publish, deploy]
     uses: aurea-io/aurea-ci/.github/workflows/notify.yml@7b42045
     with:
