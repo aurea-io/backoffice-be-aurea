@@ -31,6 +31,20 @@ enum EntitlementSource {
   migration
 }
 
+enum SubscriptionStatus {
+  trialing
+  active
+  past_due
+  canceled
+  expired
+}
+
+enum BillingInterval {
+  month
+  year
+  one_time
+}
+
 // -----------------------------------------------------------------------------
 // MODELS
 // -----------------------------------------------------------------------------
@@ -64,6 +78,8 @@ model Tenant {
   memberships  TenantUser[]
   features     TenantFeature[]
   entitlements TenantEntitlement[]
+  subscriptions Subscription[]
+  creditLedger CreditLedger[]
   catalogItems CatalogItem[]
 }
 
@@ -113,6 +129,127 @@ model TenantUser {
   @@unique([tenantId, userId]) // A user cannot have multiple base roles in the same tenant
   @@index([tenantId, isActive])
   @@index([userId, isActive])
+}
+
+model Plan {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  key         String       @unique
+  name        String
+  description String?
+  isActive    Boolean      @default(true)
+  prices      PlanPrice[]
+  planAddons  PlanAddon[]
+  subscriptions Subscription[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([isActive])
+}
+
+model PlanPrice {
+  id            String          @id @default(auto()) @map("_id") @db.ObjectId
+  planId        String          @db.ObjectId
+  currency      String
+  amountCents   Int
+  interval      BillingInterval
+  limits        Json?
+  isActive      Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  plan          Plan            @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, currency, interval])
+  @@index([planId, isActive])
+}
+
+model Addon {
+  id             String          @id @default(auto()) @map("_id") @db.ObjectId
+  key            String          @unique
+  name           String
+  description    String?
+  priceCents     Int
+  currency       String
+  creditAmount   Int             @default(0)
+  isActive       Boolean         @default(true)
+  planAddons     PlanAddon[]
+  subscriptions  SubscriptionAddon[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([isActive])
+}
+
+model PlanAddon {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  planId    String   @db.ObjectId
+  addonId   String   @db.ObjectId
+  createdAt DateTime @default(now())
+
+  plan      Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+  addon     Addon    @relation(fields: [addonId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, addonId])
+  @@index([addonId])
+}
+
+model Subscription {
+  id                  String             @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId            String             @db.ObjectId
+  planId              String             @db.ObjectId
+  status              SubscriptionStatus
+  currentPeriodStart  DateTime?
+  currentPeriodEnd    DateTime?
+  gracePeriodEndsAt   DateTime?
+  canceledAt          DateTime?
+  limits              Json?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  tenant              Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plan                Plan               @relation(fields: [planId], references: [id], onDelete: Restrict)
+  addons              SubscriptionAddon[]
+  creditLedger        CreditLedger[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, currentPeriodEnd])
+  @@index([planId, status])
+}
+
+model SubscriptionAddon {
+  id             String          @id @default(auto()) @map("_id") @db.ObjectId
+  subscriptionId String          @db.ObjectId
+  addonId        String          @db.ObjectId
+  quantity       Int              @default(1)
+  status         SubscriptionStatus
+  startsAt       DateTime         @default(now())
+  endsAt         DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  subscription   Subscription      @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  addon          Addon             @relation(fields: [addonId], references: [id], onDelete: Restrict)
+
+  @@unique([subscriptionId, addonId])
+  @@index([addonId, status])
+}
+
+model CreditLedger {
+  id             String        @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId       String        @db.ObjectId
+  subscriptionId String?       @db.ObjectId
+  amount         Int
+  balanceAfter   Int
+  kind           String
+  reason         String?
+  idempotencyKey String        @unique
+  createdAt      DateTime      @default(now())
+
+  tenant         Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, kind, createdAt])
 }
 
 // Effective capability configuration selected for one tenant.
