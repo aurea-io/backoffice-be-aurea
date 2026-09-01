@@ -65,7 +65,7 @@ export class CapabilityEvaluator {
       if (context.surface === 'private') {
         if (entry.requiredRole && entry.requiredRole !== context.role) return (map[entry.key] = false);
         const required = entry.permissions ?? [];
-        if (required.some((permission) => !(context.permissions ?? []).includes(permission))) {
+        if (required.some((permission) => !(context.permissions ?? []).includes('*') && !(context.permissions ?? []).includes(permission))) {
           return (map[entry.key] = false);
         }
       }
@@ -86,12 +86,16 @@ export class CapabilityEvaluator {
   }
 
   private findRule(rules: CapabilityRule[] | undefined, key: string): CapabilityRule | undefined {
-    return rules?.find((rule) => {
-      if (rule.key === key) return true;
-      if (!rule.key.endsWith('.*')) return false;
-      const prefix = rule.key.slice(0, -2);
-      return key === prefix || key.startsWith(`${prefix}.`);
-    });
+    return rules
+      ?.filter((rule) => {
+        if (rule.key === key) return true;
+        if (rule.key.endsWith('.*')) {
+          const prefix = rule.key.slice(0, -2);
+          return key === prefix || key.startsWith(`${prefix}.`);
+        }
+        return key.startsWith(`${rule.key}.`);
+      })
+      .sort((a, b) => b.key.replace('.*', '').length - a.key.replace('.*', '').length)[0];
   }
 
   private parentKeys(key: string): string[] {
