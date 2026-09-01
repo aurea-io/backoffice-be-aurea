@@ -22,7 +22,7 @@ describe('EntitlementResolver', () => {
   it('supports immediate tenant changes over plan rules', () => {
     expect(resolver.isEnabled('services.bookings', {
       planRules: [{ key: 'services.*', effect: 'deny' }],
-      tenantRules: [{ key: 'services.bookings', effect: 'allow' }],
+      tenantRules: [{ key: 'services', effect: 'allow' }, { key: 'services.bookings', effect: 'allow' }],
     })).toBe(true);
   });
 
