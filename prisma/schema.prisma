@@ -35,7 +35,7 @@ model User {
   updatedAt    DateTime @updatedAt
 
   memberships  TenantUser[]
-  authTokens   AuthToken[]
+  authTokens   AuthToken[] @relation("UserAuthTokens")
 }
 
 model Tenant {
@@ -65,7 +65,7 @@ model TenantUser {
   updatedAt    DateTime @updatedAt
 
   tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User     @relation("UserAuthTokens", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, userId]) // A user cannot have multiple base roles in the same tenant
 }

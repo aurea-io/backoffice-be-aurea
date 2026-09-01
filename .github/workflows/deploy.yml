@@ -1,0 +1,113 @@
+name: Build and deploy backend
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy-backend-production
+  cancel-in-progress: false
+
+env:
+  IMAGE: ghcr.io/aurea-io/backoffice-be-aurea
+  CONTAINER_NAME: aurea-backend
+  APP_PORT: '3001'
+
+jobs:
+  verify:
+    name: Verify backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npx --no-install prisma generate
+      - run: npm test
+      - run: npm run build
+
+  publish:
+    name: Publish Docker image
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=raw,value=latest
+            type=sha,format=short
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: AUREA_COMMIT_ID=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy backend server
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check deploy configuration
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_SSH_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_SSH_USER }}
+          DEPLOY_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_ENV_FILE: ${{ secrets.DEPLOY_ENV_FILE }}
+        run: |
+          test -n "$DEPLOY_HOST"
+          test -n "$DEPLOY_USER"
+          test -n "$DEPLOY_KEY"
+          test -n "$DEPLOY_ENV_FILE"
+      - uses: appleboy/ssh-action@v1.2.2
+        env:
+          IMAGE: ${{ env.IMAGE }}:${{ github.sha }}
+          CONTAINER_NAME: ${{ env.CONTAINER_NAME }}
+          APP_PORT: ${{ env.APP_PORT }}
+          DEPLOY_ENV_FILE: ${{ secrets.DEPLOY_ENV_FILE }}
+        with:
+          host: ${{ secrets.DEPLOY_SSH_HOST }}
+          username: ${{ secrets.DEPLOY_SSH_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_SSH_PORT || 22 }}
+          envs: IMAGE,CONTAINER_NAME,APP_PORT,DEPLOY_ENV_FILE
+          script_stop: true
+          script: |
+            set -eu
+            docker pull "$IMAGE"
+            docker rm -f "$CONTAINER_NAME" 2>/dev/null || true
+            docker run -d --name "$CONTAINER_NAME" --restart unless-stopped \
+              --env-file "$DEPLOY_ENV_FILE" -p "$APP_PORT:$APP_PORT" "$IMAGE"
+            sleep 5
+            test "$(docker inspect -f '{{.State.Running}}' "$CONTAINER_NAME")" = true
+
+  notify:
+    name: Notify Discord
+    if: always()
+    needs: [verify, publish, deploy]
+    uses: aurea-io/aurea-ci/.github/workflows/notify.yml@7b42045
+    with:
+      event-type: deploy
+      environment: production
+      source-commit: ${{ github.sha }}
+      status: ${{ needs.deploy.result == 'success' && needs.publish.result == 'success' && needs.verify.result == 'success' && 'success' || 'failure' }}
+    secrets: inherit
