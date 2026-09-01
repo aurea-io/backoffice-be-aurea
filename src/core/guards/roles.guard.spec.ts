@@ -12,7 +12,7 @@ describe('RolesGuard (RBAC)', () => {
   beforeEach(() => {
     reflector = new Reflector();
     mockTenantRepo = {
-      findSuperadminMembership: vi.fn(),
+      findPlatformMembership: vi.fn(),
     };
     guard = new RolesGuard(reflector, mockTenantRepo);
   });
@@ -42,8 +42,8 @@ describe('RolesGuard (RBAC)', () => {
     expect(result).toBe(true);
   });
 
-  it('should allow global superadmin access to any role-protected route', async () => {
-    mockTenantRepo.findSuperadminMembership.mockResolvedValue({ id: 'm1', role: Role.SUPERADMIN });
+  it('should allow platform superadmin access to platform route', async () => {
+    mockTenantRepo.findPlatformMembership.mockResolvedValue({ id: 'm1', role: Role.SUPERADMIN });
     const context = createMockContext([Role.SUPERADMIN], { sub: 'u1' });
 
     const result = await guard.canActivate(context);
@@ -51,14 +51,14 @@ describe('RolesGuard (RBAC)', () => {
   });
 
   it('should deny non-superadmin access to superadmin route', async () => {
-    mockTenantRepo.findSuperadminMembership.mockResolvedValue(null);
+    mockTenantRepo.findPlatformMembership.mockResolvedValue(null);
     const context = createMockContext([Role.SUPERADMIN], { sub: 'u1' });
 
     await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
   });
 
   it('should allow OWNER access in tenant context', async () => {
-    mockTenantRepo.findSuperadminMembership.mockResolvedValue(null);
+    mockTenantRepo.findPlatformMembership.mockResolvedValue(null);
     const context = createMockContext([Role.MANAGER], { sub: 'u1' }, { role: Role.OWNER });
 
     const result = await guard.canActivate(context);
@@ -66,7 +66,7 @@ describe('RolesGuard (RBAC)', () => {
   });
 
   it('should allow MANAGER access when MANAGER role is in required list', async () => {
-    mockTenantRepo.findSuperadminMembership.mockResolvedValue(null);
+    mockTenantRepo.findPlatformMembership.mockResolvedValue(null);
     const context = createMockContext([Role.MANAGER, Role.OWNER], { sub: 'u1' }, { role: Role.MANAGER });
 
     const result = await guard.canActivate(context);
@@ -74,7 +74,7 @@ describe('RolesGuard (RBAC)', () => {
   });
 
   it('should deny STAFF access when MANAGER role is required', async () => {
-    mockTenantRepo.findSuperadminMembership.mockResolvedValue(null);
+    mockTenantRepo.findPlatformMembership.mockResolvedValue(null);
     const context = createMockContext([Role.MANAGER], { sub: 'u1' }, { role: Role.STAFF });
 
     await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
