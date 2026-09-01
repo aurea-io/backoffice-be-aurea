@@ -71,6 +71,10 @@ model Tenant {
   name         String
   vertical     String   // e.g. "gastronomy", "beauty", "health", "realestate"
   isActive     Boolean  @default(true)
+  maintenanceMode Boolean @default(false)
+  maintenanceMessage String?
+  deprecatedAt DateTime?
+  publicAccessUntil DateTime?
   settings     Json?    // Branding, colors, logo, schedule, contact, social links
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

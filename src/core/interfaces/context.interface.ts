@@ -16,6 +16,10 @@ export interface TenantContext {
   role: Role;
   permissions: string[];
   activeFeatures: string[];
+  maintenanceMode?: boolean;
+  maintenanceMessage?: string | null;
+  deprecatedAt?: Date | null;
+  publicAccessUntil?: Date | null;
 }
 
 export interface AuthenticatedUser {
