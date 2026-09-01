@@ -1,0 +1,8 @@
+name: Commit policy
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  conventional-commits:
+    uses: aurea-io/aurea-ci/.github/workflows/commit-policy.yml@122aac0b463dd46badc94c0f86407a434a546a59
