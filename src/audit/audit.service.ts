@@ -21,10 +21,11 @@ export class AuditService {
     return this.prisma.auditEvent.create({ data: event as any });
   }
 
-  async listForTenant(tenantId: string, limit = 100) {
+  async listForTenant(tenantId: string, limit = 100, cursor?: string) {
     return this.prisma.auditEvent.findMany({
       where: { tenantId },
       orderBy: { createdAt: 'desc' },
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       take: Math.min(Math.max(limit, 1), 500),
       select: {
         id: true, tenantId: true, actorUserId: true, action: true,
