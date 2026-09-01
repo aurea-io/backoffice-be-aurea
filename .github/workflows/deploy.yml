@@ -72,6 +72,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       configured: ${{ steps.config.outputs.configured }}
+      reason: ${{ steps.config.outputs.reason }}
     steps:
       - name: Check Render configuration
         id: config
@@ -82,6 +83,7 @@ jobs:
             echo 'configured=true' >> "$GITHUB_OUTPUT"
           else
             echo 'configured=false' >> "$GITHUB_OUTPUT"
+            echo 'reason=Falta el secret RENDER_DEPLOY_HOOK_URL en el repositorio o en la organización.' >> "$GITHUB_OUTPUT"
             echo 'Deploy backend omitido: falta RENDER_DEPLOY_HOOK_URL.'
           fi
       - name: Trigger Render deploy
@@ -119,6 +121,7 @@ jobs:
       environment: production
       source-commit: ${{ github.sha }}
       status: ${{ needs.deploy.outputs.configured == 'true' && needs.deploy.result == 'success' && 'success' || needs.deploy.outputs.configured == 'false' && 'skipped' || 'failure' }}
+      reason: ${{ needs.deploy.outputs.reason }}
     secrets:
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
