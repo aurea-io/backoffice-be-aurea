@@ -250,7 +250,7 @@ export class AuthService {
       throw new UnauthorizedException('User not found or inactive.');
     }
 
-    const platformMembership = await this.tenantRepo.findPlatformMembership(userId);
+    const platformMembership = await (this.tenantRepo as any).findPlatformMembership?.(userId) ?? await (this.tenantRepo as any).findSuperadminMembership?.(userId);
     const isAureaSuperadmin = Boolean(platformMembership);
 
     const currentContext = tenantId
