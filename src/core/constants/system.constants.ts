@@ -10,7 +10,6 @@ export class SystemConstants {
   ] as const;
   static readonly DEFAULT_PORT = 3000;
   static readonly DEFAULT_FRONTEND_URL = 'http://localhost:5173';
-  static readonly DEFAULT_JWT_SECRET =
-    'local-development-key-change-me';
+  static readonly DEFAULT_JWT_SECRET = 'local-development-key-change-me';
   static readonly GLOBAL_API_PREFIX = 'api';
 }

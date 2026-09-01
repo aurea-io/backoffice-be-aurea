@@ -16,9 +16,7 @@ import { SystemConstants, AuthConstants } from '../core/constants/index.js';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (config: ConfigService) => ({
-        secret:
-          config.get<string>('JWT_ACCESS_SECRET') ||
-          SystemConstants.DEFAULT_JWT_SECRET,
+        secret: getJwtSecret(config),
         signOptions: {
           expiresIn: (config.get<string>('JWT_ACCESS_EXPIRES_IN') ||
             AuthConstants.DEFAULT_JWT_ACCESS_EXPIRATION) as any,
@@ -32,3 +30,12 @@ import { SystemConstants, AuthConstants } from '../core/constants/index.js';
   exports: [AuthService, JwtModule, PassportModule],
 })
 export class AuthModule {}
+
+function getJwtSecret(config: ConfigService): string {
+  const secret = config.get<string>('JWT_ACCESS_SECRET')?.trim();
+  if (secret) return secret;
+  if (config.get<string>('NODE_ENV') === 'production') {
+    throw new Error('JWT_ACCESS_SECRET must be configured in production.');
+  }
+  return SystemConstants.DEFAULT_JWT_SECRET;
+}

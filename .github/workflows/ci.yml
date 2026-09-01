@@ -3,8 +3,10 @@ on:
   pull_request:
   push:
     branches: [main]
+permissions:
+  contents: read
 jobs:
   ci:
-    uses: aurea-io/aurea-ci/.github/workflows/ci.yml@main
+    uses: aurea-io/aurea-ci/.github/workflows/ci.yml@122aac0b463dd46badc94c0f86407a434a546a59
     with:
       project-type: node-backend

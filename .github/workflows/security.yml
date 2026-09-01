@@ -3,8 +3,10 @@ on:
   pull_request:
   push:
     branches: [main]
+permissions:
+  contents: read
 jobs:
   security:
-    uses: aurea-io/aurea-ci/.github/workflows/security.yml@main
+    uses: aurea-io/aurea-ci/.github/workflows/security.yml@122aac0b463dd46badc94c0f86407a434a546a59
     with:
       project-type: node-backend
