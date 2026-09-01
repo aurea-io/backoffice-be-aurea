@@ -448,15 +448,16 @@ export class AuthService {
   }
 
   private async generateAccessToken(payload: JwtPayload): Promise<string> {
-    const secret =
-      this.configService.get<string>('JWT_ACCESS_SECRET') ||
-      SystemConstants.DEFAULT_JWT_SECRET;
+    const secret = this.configService.get<string>('JWT_ACCESS_SECRET')?.trim();
+    if (!secret && this.configService.get<string>('NODE_ENV') === 'production') {
+      throw new Error('JWT_ACCESS_SECRET must be configured in production.');
+    }
     const expiresIn =
       this.configService.get<string>('JWT_ACCESS_EXPIRES_IN') ||
       AuthConstants.DEFAULT_JWT_ACCESS_EXPIRATION;
 
     return this.jwtService.signAsync(payload, {
-      secret,
+      secret: secret || SystemConstants.DEFAULT_JWT_SECRET,
       expiresIn: expiresIn as any,
     });
   }

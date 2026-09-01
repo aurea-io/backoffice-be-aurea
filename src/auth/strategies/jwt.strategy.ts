@@ -8,9 +8,11 @@ import type { JwtPayload } from '../../core/interfaces/context.interface.js';
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(configService: ConfigService) {
-    const secret =
-      configService.get<string>('JWT_ACCESS_SECRET') ||
-      SystemConstants.DEFAULT_JWT_SECRET;
+    const configuredSecret = configService.get<string>('JWT_ACCESS_SECRET')?.trim();
+    const secret = configuredSecret || SystemConstants.DEFAULT_JWT_SECRET;
+    if (!configuredSecret && configService.get<string>('NODE_ENV') === 'production') {
+      throw new Error('JWT_ACCESS_SECRET must be configured in production.');
+    }
 
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
