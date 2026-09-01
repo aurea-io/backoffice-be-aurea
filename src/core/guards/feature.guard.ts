@@ -3,6 +3,7 @@ import {
   CanActivate,
   ExecutionContext,
   ForbiddenException,
+  Optional,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { REQUIRE_FEATURE_KEY } from '../decorators/require-feature.decorator.js';
@@ -13,10 +14,10 @@ import type { JwtPayload, TenantContext } from '../interfaces/context.interface.
 export class FeatureGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
-    private readonly capabilityService: CapabilityService,
+    @Optional() private readonly capabilityService?: CapabilityService,
   ) {}
 
-  async canActivate(context: ExecutionContext): Promise<boolean> {
+  canActivate(context: ExecutionContext): boolean | Promise<boolean> {
     const requiredFeature = this.reflector.getAllAndOverride<string>(
       REQUIRE_FEATURE_KEY,
       [context.getHandler(), context.getClass()],
@@ -28,22 +29,32 @@ export class FeatureGuard implements CanActivate {
     const tenantContext: TenantContext | undefined = request.tenantContext;
     const user: JwtPayload | undefined = request.user;
 
-    if (!tenantContext || !user) {
-      throw new ForbiddenException('Tenant and authenticated user context are required.');
-    }
-
-    const hasFeature = await this.capabilityService.isEnabled(
-      user.sub,
-      tenantContext.tenantId,
-      requiredFeature,
-    );
-
-    if (!hasFeature) {
+    if (!tenantContext) {
       throw new ForbiddenException(
-        `This tenant does not have the '${requiredFeature}' capability enabled.`,
+        'Tenant context not found. Ensure the x-tenant-id header is provided.',
       );
     }
 
-    return true;
+    if (!this.capabilityService || !user?.sub || !tenantContext.tenantId) {
+      if (!tenantContext.activeFeatures.includes(requiredFeature)) {
+        throw new ForbiddenException(
+          `This tenant does not have the '${requiredFeature}' capability enabled.`,
+        );
+      }
+      return true;
+    }
+
+    return this.capabilityService.isEnabled(
+      user.sub,
+      tenantContext.tenantId,
+      requiredFeature,
+    ).then((enabled) => {
+      if (!enabled) {
+        throw new ForbiddenException(
+          `This tenant does not have the '${requiredFeature}' capability enabled.`,
+        );
+      }
+      return true;
+    });
   }
 }
