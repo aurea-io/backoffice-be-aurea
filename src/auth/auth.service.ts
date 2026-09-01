@@ -1,6 +1,7 @@
 import {
   Injectable,
   UnauthorizedException,
+  ForbiddenException,
   ConflictException,
   BadRequestException,
   Logger,
@@ -387,7 +388,7 @@ export class AuthService {
       };
     }
 
-    throw new UnauthorizedException('You do not have access to this tenant.');
+    throw new ForbiddenException('Tenant access denied.');
   }
 
   private formatUserTenants(memberships: any[]) {
