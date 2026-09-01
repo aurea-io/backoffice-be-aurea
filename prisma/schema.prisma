@@ -118,6 +118,32 @@ model CatalogItem {
   @@index([tenantId])
 }
 
+// Global, platform-scoped definition of modules and functions.
+// Tenant activation is intentionally stored separately in TenantFeature.
+model ModuleCatalogEntry {
+  id                  String   @id @default(auto()) @map("_id") @db.ObjectId
+  key                 String   @unique
+  kind                String   // module | function
+  moduleKey           String
+  sectionKey          String
+  pageKey             String
+  label               String
+  status              String
+  requiredRole        String?
+  permissions         String[]
+  dependencies        String[]
+  compatibility      Json
+  availability       Json?
+  metadata            Json?
+  catalogVersion      String
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([moduleKey])
+  @@index([sectionKey, pageKey])
+  @@index([status])
+}
+
 // Invitation & Exclusive Registration Codes
 model Invitation {
   id          String    @id @default(auto()) @map("_id") @db.ObjectId
