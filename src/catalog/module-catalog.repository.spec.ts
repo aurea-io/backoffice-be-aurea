@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { catalogEntries } from './module-catalog.repository.js';
 
 describe('catalogEntries', () => {
-  it('flattens modules and functions while preserving hierarchy and version', () => {
+  it('flattens modules and functions while preserving hierarchy, scope, and version', () => {
     const entries = catalogEntries({
       version: '1.0.0',
       modules: [{
@@ -24,7 +24,7 @@ describe('catalogEntries', () => {
       }],
     });
     expect(entries).toHaveLength(2);
-    expect(entries[0]).toMatchObject({ kind: 'module', moduleKey: 'services.bookings', catalogVersion: '1.0.0' });
-    expect(entries[1]).toMatchObject({ kind: 'function', moduleKey: 'services.bookings', permissions: ['bookings:write'] });
+    expect(entries[0]).toMatchObject({ kind: 'module', moduleKey: 'services.bookings', scope: 'tenant', catalogVersion: '1.0.0' });
+    expect(entries[1]).toMatchObject({ kind: 'function', moduleKey: 'services.bookings', scope: 'tenant', permissions: ['bookings:write'] });
   });
 });
