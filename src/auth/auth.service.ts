@@ -414,9 +414,10 @@ export class AuthService {
     const accessToken = await this.generateAccessToken(payload);
     const { rawRefreshToken, maxAgeMs } = await this.generateAndStoreRefreshToken(userId);
 
-    const isAureaSuperadmin = memberships.some(
-      (m) => m.role === RoleConstants.SUPERADMIN && m.isActive,
-    );
+    const platformMembership =
+      await (this.tenantRepo as any).findPlatformMembership?.(userId) ??
+      await (this.tenantRepo as any).findSuperadminMembership?.(userId);
+    const isAureaSuperadmin = Boolean(platformMembership);
 
     return {
       accessToken,
