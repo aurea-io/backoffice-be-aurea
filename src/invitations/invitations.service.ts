@@ -35,8 +35,11 @@ export class InvitationsService {
     return tenantId.trim();
   }
 
-  async create(dto: CreateInvitationDto, currentUserId?: string, activeTenantId?: string) {
-    const tenantId = await this.requireTenantManager(currentUserId, activeTenantId);
+  async create(dto: CreateInvitationDto, currentUserId?: string, activeTenantId?: string, internal = false) {
+    const tenantId = internal
+      ? activeTenantId?.trim()
+      : await this.requireTenantManager(currentUserId, activeTenantId);
+    if (!tenantId) throw new ForbiddenException('An authenticated tenant context is required.');
     const email = dto.email.toLowerCase().trim();
 
     const existingUser = await this.prisma.user.findUnique({ where: { email } });
@@ -66,8 +69,11 @@ export class InvitationsService {
     return invitation;
   }
 
-  async findAll(currentUserId?: string, activeTenantId?: string) {
-    const tenantId = await this.requireTenantManager(currentUserId, activeTenantId);
+  async findAll(currentUserId?: string, activeTenantId?: string, internal = false) {
+    const tenantId = internal
+      ? activeTenantId?.trim()
+      : await this.requireTenantManager(currentUserId, activeTenantId);
+    if (!tenantId) throw new ForbiddenException('An authenticated tenant context is required.');
     return this.prisma.invitation.findMany({
       where: { tenantId },
       orderBy: { createdAt: 'desc' },
