@@ -281,6 +281,7 @@ model TenantFeature {
   tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, featureKey]) // Unique feature per tenant
+  @@index([tenantId, isEnabled])
 }
 
 model AuthToken {
@@ -294,6 +295,8 @@ model AuthToken {
   createdAt    DateTime @default(now())
 
   user         User     @relation("UserAuthTokens", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
 }
 
 // Dynamic Business Catalog (Agnostic to industry: physical products or services)
@@ -315,6 +318,7 @@ model CatalogItem {
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
+  @@index([tenantId, isActive])
 }
 
 // Global, platform-scoped definition of modules and functions.
@@ -360,4 +364,5 @@ model Invitation {
   updatedAt   DateTime  @updatedAt
 
   @@index([email])
+  @@index([tenantId, used])
 }
