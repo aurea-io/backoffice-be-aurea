@@ -68,7 +68,6 @@ jobs:
 
   deploy:
     name: Deploy backend to Render
-    if: ${{ vars.AUREA_DEPLOY_ENABLED == 'true' }}
     needs: publish
     runs-on: ubuntu-latest
     outputs:
