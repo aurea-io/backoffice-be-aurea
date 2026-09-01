@@ -250,9 +250,8 @@ export class AuthService {
       throw new UnauthorizedException('User not found or inactive.');
     }
 
-    const isAureaSuperadmin = user.memberships.some(
-      (m) => m.role === RoleConstants.SUPERADMIN && m.isActive,
-    );
+    const platformMembership = await (this.tenantRepo as any).findPlatformMembership?.(userId) ?? await (this.tenantRepo as any).findSuperadminMembership?.(userId);
+    const isAureaSuperadmin = Boolean(platformMembership);
 
     const currentContext = tenantId
       ? await this.resolveTenantContext(user, tenantId, isAureaSuperadmin)
@@ -388,24 +387,6 @@ export class AuthService {
       };
     }
 
-    if (isSuperadmin) {
-      const tenant = await this.tenantRepo.findById(tenantId);
-
-      if (tenant && tenant.isActive) {
-        return {
-          tenantId: tenant.id,
-          slug: tenant.slug,
-          name: tenant.name,
-          vertical: tenant.vertical,
-          role: RoleConstants.SUPERADMIN,
-          permissions: [RoleConstants.ALL_PERMISSIONS],
-          activeFeatures: tenant.features
-            .filter((f: any) => f.isEnabled)
-            .map((f: any) => f.featureKey),
-        };
-      }
-    }
-
     throw new UnauthorizedException('You do not have access to this tenant.');
   }
 
@@ -433,9 +414,10 @@ export class AuthService {
     const accessToken = await this.generateAccessToken(payload);
     const { rawRefreshToken, maxAgeMs } = await this.generateAndStoreRefreshToken(userId);
 
-    const isAureaSuperadmin = memberships.some(
-      (m) => m.role === RoleConstants.SUPERADMIN && m.isActive,
-    );
+    const platformMembership =
+      await (this.tenantRepo as any).findPlatformMembership?.(userId) ??
+      await (this.tenantRepo as any).findSuperadminMembership?.(userId);
+    const isAureaSuperadmin = Boolean(platformMembership);
 
     return {
       accessToken,

@@ -198,13 +198,22 @@ export class TenantRepository {
     });
   }
 
+  async findPlatformMembership(userId: string, roleKey = 'SUPERADMIN') {
+    return this.prisma.platformMembership.findFirst({
+      where: { userId, roleKey, isActive: true },
+    });
+  }
+
+  /** Backward-compatible name; it now reads the platform scope only. */
   async findSuperadminMembership(userId: string) {
-    return this.prisma.tenantUser.findFirst({
-      where: {
-        userId,
-        role: Role.SUPERADMIN,
-        isActive: true,
-      },
+    return this.findPlatformMembership(userId);
+  }
+
+  async upsertPlatformMembership(userId: string, roleKey = 'SUPERADMIN') {
+    return this.prisma.platformMembership.upsert({
+      where: { userId_roleKey: { userId, roleKey } },
+      update: { isActive: true },
+      create: { userId, roleKey, isActive: true },
     });
   }
 
