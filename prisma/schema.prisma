@@ -110,12 +110,41 @@ model CatalogItem {
   imageUrl    String?
   isActive    Boolean  @default(true)
   metadata    Json?    // Options, variants, tags
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
+}
+
+// Global, platform-scoped definition of modules and functions.
+// Tenant activation is intentionally stored separately in TenantFeature.
+model ModuleCatalogEntry {
+  id                  String   @id @default(auto()) @map("_id") @db.ObjectId
+  key                 String   @unique
+  kind                String   // module | function
+  moduleKey           String
+  sectionKey          String
+  pageKey             String
+  scope               String
+  label               String
+  status              String
+  isArchived          Boolean  @default(false)
+  requiredRole        String?
+  permissions         String[]
+  dependencies        String[]
+  compatibility      Json
+  availability       Json?
+  metadata            Json?
+  catalogVersion      String
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([moduleKey])
+  @@index([sectionKey, pageKey])
+  @@index([status])
+  @@index([isArchived])
 }
 
 // Invitation & Exclusive Registration Codes
