@@ -16,7 +16,7 @@ describe('CapabilityEvaluator', () => {
       ...base,
       planRules: [{ key: 'services.*', effect: 'deny' }],
       tenantRules: [{ key: 'services.bookings', effect: 'deny' }],
-      ownerOverrides: [{ key: 'services.bookings', effect: 'allow' }, { key: 'services', effect: 'allow' }],
+      ownerOverrides: [{ key: 'services.bookings', effect: 'allow' }, { key: 'services.bookings.*', effect: 'allow' }, { key: 'services', effect: 'allow' }],
       permissions: ['bookings:create'],
     });
     expect(result.map['services.bookings']).toBe(true);
