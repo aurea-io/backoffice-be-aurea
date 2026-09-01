@@ -105,14 +105,28 @@ jobs:
             sleep 5
             test "$(docker inspect -f '{{.State.Running}}' "$CONTAINER_NAME")" = true
 
-  notify:
-    name: Notify Discord
-    if: ${{ always() && (vars.AUREA_DEPLOY_ENABLED == 'true' || needs.verify.result != 'success' || needs.publish.result != 'success') }}
-    needs: [verify, publish, deploy]
+  notify-image:
+    name: Notify image
+    if: ${{ always() && needs.publish.result != 'skipped' }}
+    needs: [verify, publish]
+    uses: aurea-io/aurea-ci/.github/workflows/notify.yml@7b42045
+    with:
+      event-type: image
+      environment: production
+      image: ghcr.io/aurea-io/backoffice-be-aurea
+      version: ${{ github.sha }}
+      source-commit: ${{ github.sha }}
+      status: ${{ needs.publish.result == 'success' && needs.verify.result == 'success' && 'success' || 'failure' }}
+    secrets: inherit
+
+  notify-deploy:
+    name: Notify deploy
+    if: ${{ always() && needs.deploy.result != 'skipped' }}
+    needs: [publish, deploy]
     uses: aurea-io/aurea-ci/.github/workflows/notify.yml@7b42045
     with:
       event-type: deploy
       environment: production
       source-commit: ${{ github.sha }}
-      status: ${{ needs.deploy.result == 'success' && needs.publish.result == 'success' && needs.verify.result == 'success' && 'success' || 'failure' }}
+      status: ${{ needs.deploy.result == 'success' && 'success' || 'failure' }}
     secrets: inherit
