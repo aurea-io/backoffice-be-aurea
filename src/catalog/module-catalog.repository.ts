@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type { CatalogContract, CatalogModuleContract } from './contracts/index.js';
 import { validateCatalogContract } from './contracts/index.js';
 import type { Prisma } from '@prisma/client';
-import type { PrismaService } from '../prisma/prisma.service.js';
+import { PrismaService } from '../prisma/prisma.service.js';
 
 export interface ModuleCatalogEntryInput {
   key: string;
@@ -10,6 +10,7 @@ export interface ModuleCatalogEntryInput {
   moduleKey: string;
   sectionKey: string;
   pageKey: string;
+  scope: string;
   label: string;
   status: string;
   requiredRole?: string;
@@ -29,6 +30,7 @@ export function catalogEntries(contract: CatalogContract): ModuleCatalogEntryInp
       moduleKey: module.key,
       sectionKey: module.section,
       pageKey: module.page,
+      scope: fn.scope,
       label: fn.label,
       status: fn.status,
       requiredRole: fn.requiredRole,
@@ -47,6 +49,7 @@ function toModuleEntry(module: CatalogModuleContract, version: string): ModuleCa
     moduleKey: module.key,
     sectionKey: module.section,
     pageKey: module.page,
+    scope: module.scope,
     label: module.label,
     status: module.status,
     requiredRole: module.requiredRole,
@@ -63,13 +66,18 @@ export class ModuleCatalogRepository {
 
   async sync(contract: CatalogContract) {
     const entries = catalogEntries(contract);
-    for (const entry of entries) {
-      await this.prisma.moduleCatalogEntry.upsert({
+    const keys = entries.map((entry) => entry.key);
+    await this.prisma.$transaction([
+      this.prisma.moduleCatalogEntry.updateMany({
+        where: { key: { notIn: keys } },
+        data: { status: 'deprecated', catalogVersion: contract.version },
+      }),
+      ...entries.map((entry) => this.prisma.moduleCatalogEntry.upsert({
         where: { key: entry.key },
-        create: entry,
-        update: entry,
-      });
-    }
+        create: { ...entry, requiredRole: entry.requiredRole ?? null },
+        update: { ...entry, requiredRole: entry.requiredRole ?? null },
+      })),
+    ]);
     return entries;
   }
 
