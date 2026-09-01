@@ -51,6 +51,7 @@ model Tenant {
 
   memberships  TenantUser[]
   features     TenantFeature[]
+  entitlements TenantEntitlement[]
   catalogItems CatalogItem[]
 }
 
@@ -98,6 +99,24 @@ model TenantUser {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, userId]) // A user cannot have multiple base roles in the same tenant
+}
+
+
+// Effective capability configuration selected for one tenant.
+model TenantEntitlement {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId      String   @db.ObjectId
+  capabilityKey String
+  effect        String   // allow | deny
+  source        String   // plan | tenant_setting | owner_override | migration
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, capabilityKey])
+  @@index([tenantId, isActive])
 }
 
 // Active Modules / Features per Tenant (FBAC)
