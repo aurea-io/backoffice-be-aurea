@@ -204,6 +204,11 @@ export class TenantRepository {
     });
   }
 
+  /** Backward-compatible name; it now reads the platform scope only. */
+  async findSuperadminMembership(userId: string) {
+    return this.findPlatformMembership(userId);
+  }
+
   async upsertPlatformMembership(userId: string, roleKey = 'SUPERADMIN') {
     return this.prisma.platformMembership.upsert({
       where: { userId_roleKey: { userId, roleKey } },
