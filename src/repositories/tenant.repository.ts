@@ -104,6 +104,10 @@ export class TenantRepository {
     name: string;
     vertical: string;
     isActive: boolean;
+    maintenanceMode: boolean;
+    maintenanceMessage: string | null;
+    deprecatedAt: Date | null;
+    publicAccessUntil: Date | null;
     settings: Record<string, any>;
   }>) {
     return this.prisma.tenant.update({
