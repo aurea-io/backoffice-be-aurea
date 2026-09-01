@@ -19,6 +19,18 @@ enum Role {
   CASHIER
 }
 
+enum CapabilityEffect {
+  allow
+  deny
+}
+
+enum EntitlementSource {
+  plan
+  tenant_setting
+  owner_override
+  migration
+}
+
 // -----------------------------------------------------------------------------
 // MODELS
 // -----------------------------------------------------------------------------
@@ -107,16 +119,16 @@ model TenantEntitlement {
   id            String   @id @default(auto()) @map("_id") @db.ObjectId
   tenantId      String   @db.ObjectId
   capabilityKey String
-  effect        String   // allow | deny
-  source        String   // plan | tenant_setting | owner_override | migration
+  effect        CapabilityEffect
+  source        EntitlementSource
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  @@unique([tenantId, capabilityKey])
-  @@index([tenantId, isActive])
+  @@unique([tenantId, capabilityKey, source])
+  @@index([tenantId, capabilityKey, isActive])
 }
 
 // Active Modules / Features per Tenant (FBAC)
