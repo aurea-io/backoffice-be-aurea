@@ -65,7 +65,7 @@ model TenantUser {
   updatedAt    DateTime @updatedAt
 
   tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user         User     @relation("UserAuthTokens", fields: [userId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, userId]) // A user cannot have multiple base roles in the same tenant
 }
@@ -94,7 +94,7 @@ model AuthToken {
   expiresAt    DateTime
   createdAt    DateTime @default(now())
 
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User     @relation("UserAuthTokens", fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // Dynamic Business Catalog (Agnostic to industry: physical products or services)
