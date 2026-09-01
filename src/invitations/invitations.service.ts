@@ -54,11 +54,25 @@ export class InvitationsService {
     const randomPart = Math.random().toString(36).substring(2, 7).toUpperCase();
     const code = `AUR-${randomPart}`;
 
+    const membership = internal
+      ? null
+      : await this.prisma.tenantUser.findFirst({
+          where: { userId: currentUserId, tenantId, isActive: true },
+          select: { role: true },
+        });
+    const requestedRole = dto.role || Role.STAFF;
+    const invitationRole =
+      !internal && membership?.role === Role.MANAGER && requestedRole === Role.OWNER
+        ? Role.STAFF
+        : requestedRole === Role.SUPERADMIN
+          ? Role.STAFF
+          : requestedRole;
+
     const invitation = await this.prisma.invitation.create({
       data: {
         code,
         email,
-        role: dto.role === Role.SUPERADMIN ? Role.STAFF : (dto.role || Role.STAFF),
+        role: invitationRole,
         tenantId,
         expiresAt,
         used: false,
