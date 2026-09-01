@@ -34,7 +34,7 @@ export class RolesGuard implements CanActivate {
     }
 
     // 1. Check if user is a global platform SUPERADMIN
-    const userSuperadminMembership = await this.tenantRepo.findSuperadminMembership(userId);
+    const userSuperadminMembership = await this.tenantRepo.findPlatformMembership(userId);
     const isGlobalSuperadmin = Boolean(userSuperadminMembership);
 
     if (requiredRoles.includes(Role.SUPERADMIN)) {
@@ -44,11 +44,6 @@ export class RolesGuard implements CanActivate {
       throw new ForbiddenException(
         'Restricted access: AUREA Platform Superadmin privileges required.',
       );
-    }
-
-    // Global superadmin has bypass on tenant roles
-    if (isGlobalSuperadmin) {
-      return true;
     }
 
     // 2. Check role in current Tenant context
