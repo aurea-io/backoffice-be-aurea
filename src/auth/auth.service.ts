@@ -109,7 +109,7 @@ export class AuthService {
 
     if (!user) {
       // Auto-create user from Google
-      const created = await this.userRepo.create({
+      await this.userRepo.create({
         email,
         name: googleProfile.name || email.split('@')[0],
         googleId: googleProfile.googleId,

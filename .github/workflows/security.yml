@@ -1,4 +1,4 @@
-name: CI
+name: Security
 
 on:
   pull_request:
@@ -6,7 +6,7 @@ on:
     branches: [main]
 
 jobs:
-  ci:
-    uses: aurea-io/aurea-ci/.github/workflows/ci.yml@v2
+  security:
+    uses: aurea-io/aurea-ci/.github/workflows/security.yml@v2
     with:
       project-type: node-backend
