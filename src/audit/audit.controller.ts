@@ -14,7 +14,7 @@ export class AuditController {
 
   @Get()
   @Roles(Role.OWNER)
-  async list(@CurrentTenant() tenant: TenantContext, @Query('limit') limit?: string) {
-    return this.auditService.listForTenant(tenant.tenantId, Number(limit) || 100);
+  async list(@CurrentTenant() tenant: TenantContext, @Query('limit') limit?: string, @Query('cursor') cursor?: string) {
+    return this.auditService.listForTenant(tenant.tenantId, Number(limit) || 100, cursor);
   }
 }
