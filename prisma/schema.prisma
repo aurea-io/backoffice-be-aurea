@@ -63,6 +63,7 @@ model User {
   memberships  TenantUser[]
   authTokens   AuthToken[] @relation("UserAuthTokens")
   platformMemberships PlatformMembership[]
+  auditEvents AuditEvent[]
 }
 
 model Tenant {
@@ -86,9 +87,32 @@ model Tenant {
   creditLedger CreditLedger[]
   catalogItems CatalogItem[]
   brandingVersions TenantBrandingVersion[]
+  auditEvents AuditEvent[]
 }
 
 
+
+
+// Append-only change history. Sensitive values must be redacted by callers.
+model AuditEvent {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId    String   @db.ObjectId
+  actorUserId String?  @db.ObjectId
+  action      String
+  entityType  String
+  entityId    String
+  before      Json?
+  after       Json?
+  reason      String?
+  requestId   String?
+  createdAt   DateTime @default(now())
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  actor       User?    @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, entityType, entityId, createdAt])
+}
 
 // Versioned, validated tenant branding configuration.
 // Values are tokens, never arbitrary CSS.
