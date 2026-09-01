@@ -19,6 +19,17 @@ describe('EntitlementResolver', () => {
     })).toBe(false);
   });
 
+  it('accepts enabled parent capabilities without requiring the leaf itself', () => {
+    expect(resolver.isEnabled('services.bookings.create', {
+      planRules: [
+        { key: 'services', effect: 'allow' },
+        { key: 'services.bookings', effect: 'allow' },
+        { key: 'services.bookings.create', effect: 'allow' },
+      ],
+      enabledParents: new Set(['services', 'services.bookings']),
+    })).toBe(true);
+  });
+
   it('supports immediate tenant changes over plan rules', () => {
     expect(resolver.isEnabled('services.bookings', {
       planRules: [{ key: 'services.*', effect: 'deny' }],
