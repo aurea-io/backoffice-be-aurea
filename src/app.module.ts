@@ -12,6 +12,7 @@ import { CatalogModule } from './catalog/catalog.module.js';
 import { InvitationsModule } from './invitations/invitations.module.js';
 import { JwtAuthGuard } from './core/guards/jwt-auth.guard.js';
 import { HealthModule } from './health/health.module.js';
+import { ThemeModule } from './theme/theme.module.js';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { HealthModule } from './health/health.module.js';
     CatalogModule,
     InvitationsModule,
     HealthModule,
+    ThemeModule,
   ],
   controllers: [AppController],
   providers: [
