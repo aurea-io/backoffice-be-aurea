@@ -85,8 +85,36 @@ model Tenant {
   subscriptions Subscription[]
   creditLedger CreditLedger[]
   catalogItems CatalogItem[]
+  brandingVersions TenantBrandingVersion[]
 }
 
+
+
+// Versioned, validated tenant branding configuration.
+// Values are tokens, never arbitrary CSS.
+model TenantBrandingVersion {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId     String   @db.ObjectId
+  version      Int
+  primaryColor String   @default("#7c3aed")
+  accentColor  String   @default("#a78bfa")
+  textColor    String   @default("#18181b")
+  fontFamily   String   @default("sans")
+  logoUrl      String?
+  coverUrl     String?
+  layoutTokens Json?
+  overrides    Json?
+  isPreview    Boolean  @default(false)
+  isPublished  Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, version])
+  @@index([tenantId, isPublished])
+  @@index([tenantId, isPreview])
+}
 
 // Persisted, extensible RBAC matrix for platform and tenant scopes.
 model RoleDefinition {
