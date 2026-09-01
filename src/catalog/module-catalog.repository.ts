@@ -34,7 +34,7 @@ export function catalogEntries(contract: CatalogContract): ModuleCatalogEntryInp
       requiredRole: fn.requiredRole,
       permissions: fn.permissions ?? [],
       dependencies: fn.dependencies ?? [],
-      compatibility: fn.compatibility as Prisma.InputJsonObject,
+      compatibility: fn.compatibility as unknown as Prisma.InputJsonObject,
       catalogVersion: validated.version,
     })),
   ]);
@@ -52,7 +52,7 @@ function toModuleEntry(module: CatalogModuleContract, version: string): ModuleCa
     requiredRole: module.requiredRole,
     permissions: [],
     dependencies: module.dependencies ?? [],
-    compatibility: module.compatibility as Prisma.InputJsonObject,
+    compatibility: module.compatibility as unknown as Prisma.InputJsonObject,
     catalogVersion: version,
   };
 }
