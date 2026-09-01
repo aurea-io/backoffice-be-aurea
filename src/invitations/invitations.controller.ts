@@ -29,12 +29,19 @@ export class InvitationsController {
   }
 
   @Get()
-  async findAll(@Headers('x-tenant-id') tenantId?: string) {
-    return this.invitationsService.findAll(tenantId);
+  async findAll(
+    @CurrentUser() user: JwtPayload,
+    @Headers('x-tenant-id') tenantId?: string,
+  ) {
+    return this.invitationsService.findAll(user.sub, tenantId);
   }
 
   @Delete(':id')
-  async revoke(@Param('id') id: string) {
-    return this.invitationsService.revoke(id);
+  async revoke(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+    @Headers('x-tenant-id') tenantId?: string,
+  ) {
+    return this.invitationsService.revoke(id, user.sub, tenantId);
   }
 }
