@@ -1,8 +1,6 @@
 name: Build and deploy backend
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -54,8 +52,7 @@ jobs:
         with:
           images: ${{ env.IMAGE }}
           tags: |
-            type=raw,value=latest
-            type=sha,format=long,prefix=
+            type=sha,format=long,prefix=sha-
       - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
         with:
           context: .
@@ -102,7 +99,7 @@ jobs:
       event-type: image
       environment: production
       image: ghcr.io/aurea-io/backoffice-be-aurea
-      version: latest
+      version: sha-${{ github.sha }}
       source-commit: ${{ github.sha }}
       commit-message: ${{ github.event.head_commit.message || 'workflow dispatch' }}
       status: ${{ needs.publish.result == 'success' && needs.verify.result == 'success' && 'success' || 'failure' }}
