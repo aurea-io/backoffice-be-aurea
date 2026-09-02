@@ -87,9 +87,8 @@ export class InvitationsService {
     const tenantId = internal
       ? activeTenantId?.trim()
       : await this.requireTenantManager(currentUserId, activeTenantId);
-    if (!tenantId) throw new ForbiddenException('An authenticated tenant context is required.');
     return this.prisma.invitation.findMany({
-      where: { tenantId },
+      where: tenantId ? { tenantId } : undefined,
       orderBy: { createdAt: 'desc' },
     });
   }
