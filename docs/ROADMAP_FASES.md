@@ -90,7 +90,7 @@ graph TD
 
 #### Vertical Belleza / Salud / Servicios:
 - [x] **Agenda de Turnos & Citas (`appointments`):** Reservas persistentes, disponibilidad, solapamientos y confirmación/cancelación.
-- [ ] **Ficha de Clientes / Historial (`clients`):** Registro de tratamientos y notas de atención.
+- [x] **Ficha de Clientes / Historial (`clients`):** Registro de clientes, contacto, historial de turnos y notas de atención.
 
 #### Vertical Pastelería / Retail / Stock:
 - [x] **Control de Stock base (`inventory`):** Artículos, ajustes y movimientos persistentes.

@@ -9,4 +9,5 @@ export class FeatureConstants {
   static readonly POS = 'pos_cashier';
   static readonly ORDERS = 'orders';
   static readonly KITCHEN = 'kitchen';
+  static readonly CLIENTS = 'clients';
 }

@@ -20,6 +20,7 @@ import { AppointmentsModule } from './tenant/sections/appointments/appointments.
 import { InventoryModule } from './tenant/sections/inventory/inventory.module.js';
 import { RestaurantModule } from './tenant/sections/restaurant/restaurant.module.js';
 import { PosModule } from './tenant/sections/pos/pos.module.js';
+import { ClientsModule } from './tenant/sections/clients/clients.module.js';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { PosModule } from './tenant/sections/pos/pos.module.js';
     InventoryModule,
     RestaurantModule,
     PosModule,
+    ClientsModule,
   ],
   controllers: [AppController],
   providers: [
