@@ -15,7 +15,6 @@ import { HealthModule } from './health/health.module.js';
 import { ThemeModule } from './theme/theme.module.js';
 import { BootstrapModule } from './bootstrap/bootstrap.module.js';
 import { AccessModule } from './access/access.module.js';
-import { FeatureGuard } from './core/guards/feature.guard.js';
 
 @Module({
   imports: [
@@ -41,10 +40,6 @@ import { FeatureGuard } from './core/guards/feature.guard.js';
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
-    },
-    {
-      provide: APP_GUARD,
-      useClass: FeatureGuard,
     },
   ],
 })
