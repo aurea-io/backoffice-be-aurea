@@ -118,9 +118,9 @@ Los comercios pagan un abono recurrente (mensual/anual). Cada plan empaqueta un 
   - Decorador `@RequirePermissions('tables.view', ...)` en NestJS que valide que:
     1. La feature madre esté activa en el tenant (`TenantFeature.isEnabled === true`).
     2. El usuario tenga el permiso en su arreglo `TenantUser.permissions` o sea `OWNER`/`SUPERADMIN`.
-- [ ] **Navegación Dinámica en Frontend (Data-Driven Sidebar):**
+- [x] **Navegación Dinámica en Frontend (Data-Driven Sidebar):**
   - Configurar `NAV_ITEMS` declarativos para que el menú lateral se filtre automáticamente mostrando solo los módulos y submódulos para los que el empleado tiene permisos.
-- [ ] **Acciones de Gestión de Empleados:**
+- [x] **Acciones de Gestión de Empleados:**
   - [x] Modificar rol/permisos de un empleado existente sin tener que re-invitarlo.
   - [x] Activar / Suspender acceso de un empleado (`TenantUser.isActive`).
   - [x] Remover empleado del comercio con protección del último OWNER.
