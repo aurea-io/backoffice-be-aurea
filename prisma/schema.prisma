@@ -103,6 +103,7 @@ model Tenant {
   catalogItems CatalogItem[]
   brandingVersions TenantBrandingVersion[]
   bookings     Booking[]
+  inventoryItems InventoryItem[]
   auditEvents AuditEvent[]
 }
 
@@ -416,6 +417,35 @@ model Booking {
 
   @@index([tenantId, date, status])
   @@index([catalogItemId, date, status])
+}
+
+model InventoryItem {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId    String   @db.ObjectId
+  name        String
+  sku         String?
+  unit        String   @default("unidad")
+  quantity    Float    @default(0)
+  minimum     Float    @default(0)
+  costCents   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  movements   StockMovement[]
+  @@unique([tenantId, name])
+  @@index([tenantId, quantity])
+}
+
+model StockMovement {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId        String   @db.ObjectId
+  inventoryItemId String   @db.ObjectId
+  quantity        Float
+  reason          String?
+  createdAt       DateTime @default(now())
+  item            InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  @@index([tenantId, createdAt])
 }
 
 // Global, platform-scoped definition of modules and functions.

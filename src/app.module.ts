@@ -17,6 +17,7 @@ import { BootstrapModule } from './bootstrap/bootstrap.module.js';
 import { AccessModule } from './access/access.module.js';
 import { AuditModule } from './audit/audit.module.js';
 import { AppointmentsModule } from './tenant/sections/appointments/appointments.module.js';
+import { InventoryModule } from './tenant/sections/inventory/inventory.module.js';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { AppointmentsModule } from './tenant/sections/appointments/appointments.
     AccessModule,
     AuditModule,
     AppointmentsModule,
+    InventoryModule,
   ],
   controllers: [AppController],
   providers: [
