@@ -115,7 +115,7 @@ export class CatalogService {
   async importCsv(tenantId: string, dto: ImportCatalogDto) {
     const rows = dto.csv.replace(/^\uFEFF/, '').split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
     if (rows.length < 2) throw new BadRequestException('El CSV debe incluir encabezados y al menos una fila.');
-    const parse = (row: string) => row.match(/("(?:[^"]|"")*"|[^,]*)(?:,|$)/g)?.slice(0, -1).map((value) => value.replace(/,$/, '').trim().replace(/^"|"$/g, '').replace(/""/g, '"')) || [];
+    const parse = (row: string) => { const values: string[] = []; let value = ''; let quoted = false; for (let index = 0; index < row.length; index += 1) { const char = row[index]; if (char === '"') { if (quoted && row[index + 1] === '"') { value += '"'; index += 1; } else quoted = !quoted; } else if (char === ',' && !quoted) { values.push(value.trim()); value = ''; } else value += char; } values.push(value.trim()); return values; };
     const headers = parse(rows[0]).map((header) => header.toLowerCase());
     const required = ['title', 'pricecents'];
     if (required.some((header) => !headers.includes(header))) throw new BadRequestException('El CSV requiere las columnas title y priceCents.');
