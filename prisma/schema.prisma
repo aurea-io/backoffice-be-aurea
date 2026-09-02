@@ -102,6 +102,17 @@ enum PaymentStatus {
   refunded
 }
 
+enum NotificationChannel {
+  email
+  whatsapp
+}
+
+enum NotificationStatus {
+  queued
+  sent
+  failed
+}
+
 // -----------------------------------------------------------------------------
 // MODELS
 // -----------------------------------------------------------------------------
@@ -153,6 +164,7 @@ model Tenant {
   orders       Order[]
   cashSessions CashSession[]
   payments Payment[]
+  notifications Notification[]
   auditEvents AuditEvent[]
 }
 
@@ -359,6 +371,28 @@ model Payment {
   @@index([tenantId, status, createdAt])
   @@index([provider, externalId])
   @@index([tenantId, referenceType, referenceId])
+}
+
+model Notification {
+  id            String             @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId      String             @db.ObjectId
+  channel       NotificationChannel
+  status        NotificationStatus @default(queued)
+  recipient     String
+  subject       String?
+  body          String
+  referenceType String?
+  referenceId   String?
+  attempts      Int                @default(0)
+  lastError     String?
+  sentAt        DateTime?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  tenant        Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status, createdAt])
+  @@index([channel, recipient])
 }
 
 model SubscriptionAddon {
