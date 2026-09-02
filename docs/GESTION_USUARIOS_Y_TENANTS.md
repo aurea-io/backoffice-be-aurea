@@ -68,8 +68,8 @@ erDiagram
 
 ## 2. Niveles de Gestión y Flujos Operativos
 
-### A. Nivel SuperAdmin (Gestión Global de Plataforma)
-Controlado por el módulo `SuperadminModule` (`/superadmin/*`). Requiere que el usuario autenticado posea el rol global `Role.SUPERADMIN`.
+### A. Nivel plataforma (Gestión Global)
+La gestión global de plataforma fue separada del backend de tenants. El módulo `SuperadminModule` ya no se registra en esta aplicación; estas operaciones viven en `backoffice-be-aurea-internal` bajo `/platform/*` y requieren identidad/scope de plataforma.
 
 1. **Aprovisionamiento de un nuevo Tenant:**
    - Valida unicidad del `slug` (ej: `salon-glamour`, `pizzeria-roma`).
@@ -77,7 +77,7 @@ Controlado por el módulo `SuperadminModule` (`/superadmin/*`). Requiere que el 
    - Inicializa el catálogo de Feature Flags (`TenantFeature`) según el plan contratado.
    - Crea o vincula al usuario `OWNER` mediante un registro inicial en `TenantUser`.
 2. **Conmutación de Módulos FBAC (Feature-Based Access Control):**
-   - Endpoints `POST /superadmin/tenants/:id/features` y `PUT /superadmin/tenants/:id/features`.
+   - Se realiza desde el backend interno mediante sus endpoints `/platform/*`.
    - Permite activar o desactivar módulos individuales (`bookings`, `delivery`, etc.) para un comercio sin requerir cambios de código ni redeploys.
 3. **Suspensión / Reactivación de Tenants:**
    - Si `Tenant.isActive == false`, todos los requests subsiguientes a ese comercio (incluso de su dueño) son rechazados por el `TenantContextGuard` con `403 Forbidden: Tenant is inactive`.
@@ -134,18 +134,7 @@ Para que cualquier petición sea procesada en el backend, debe superar una verif
 
 ## 4. Catálogo de Endpoints de la API
 
-### 🛡️ Endpoints de SuperAdmin (`/superadmin/*`)
-*Requiere `Role.SUPERADMIN`.*
-
-| Método | Endpoint | Descripción | Body / Params |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/superadmin/tenants` | Lista todos los comercios registrados con métricas y estado. | Query: `page`, `limit`, `search`, `vertical` |
-| `GET` | `/superadmin/tenants/:id` | Detalle completo de un tenant, sus features y miembros. | Param: `id` (ObjectId) |
-| `POST` | `/superadmin/tenants` | Crea un nuevo tenant con su owner y features iniciales. | `CreateTenantDto` (`name`, `slug`, `vertical`, `ownerEmail`, `features`) |
-| `PATCH`| `/superadmin/tenants/:id` | Actualiza datos del comercio o conmuta `isActive`. | `UpdateTenantDto` (`name`, `isActive`, `vertical`, `settings`) |
-| `POST` | `/superadmin/tenants/:id/features` | Asigna o actualiza una feature flag específica. | `AssignFeatureDto` (`featureKey`, `isEnabled`) |
-| `PUT`  | `/superadmin/tenants/:id/features` | Actualiza por lote todas las feature flags del tenant. | `BatchFeaturesDto` (`features: { featureKey, isEnabled }[]`) |
-| `POST` | `/superadmin/users/grant-superadmin`| Otorga privilegios globales de SuperAdmin a un email. | `GrantSuperAdminDto` (`email`) |
+> Los endpoints históricos `/superadmin/*` se retiraron de este backend. Consultar el contrato vigente de `backoffice-be-aurea-internal` para las rutas `/platform/*`.
 
 ---
 

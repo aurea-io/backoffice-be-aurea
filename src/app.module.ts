@@ -6,7 +6,6 @@ import { AppService } from './app.service.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { RepositoriesModule } from './repositories/repositories.module.js';
 import { AuthModule } from './auth/auth.module.js';
-import { SuperadminModule } from './platform/superadmin/superadmin.module.js';
 import { TenantModule } from './tenant/core/tenant.module.js';
 import { CatalogModule } from './tenant/sections/commerce/catalog/catalog.module.js';
 import { InvitationsModule } from './tenant/core/invitations/invitations.module.js';
@@ -35,7 +34,6 @@ import { CouponsModule } from './coupons/coupons.module.js';
     PrismaModule,
     RepositoriesModule,
     AuthModule,
-    SuperadminModule,
     TenantModule,
     CatalogModule,
     InvitationsModule,
