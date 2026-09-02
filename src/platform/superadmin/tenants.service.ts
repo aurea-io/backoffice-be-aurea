@@ -15,6 +15,7 @@ import type {
   AssignFeatureDto,
   BatchFeaturesDto,
 } from './dto/index.js';
+import { AuditService } from '../../audit/audit.service.js';
 
 const VERTICAL_DEFAULT_PACKAGES: Record<string, string[]> = {
   gastronomy: ['catalog', 'tables', 'delivery', 'social_hub'],
@@ -33,6 +34,7 @@ export class SuperadminTenantsService {
     private readonly tenantRepo: TenantRepository,
     private readonly userRepo: UserRepository,
     private readonly invitationsService: InvitationsService,
+    private readonly auditService: AuditService,
   ) {}
 
   // ── Tenant Queries ────────────────────────────────────────────────────────
@@ -63,7 +65,7 @@ export class SuperadminTenantsService {
 
   // ── Tenant Lifecycle ──────────────────────────────────────────────────────
 
-  async createTenant(data: CreateTenantDto) {
+  async createTenant(data: CreateTenantDto, actorUserId?: string) {
     const ownerEmail = data.ownerEmail.toLowerCase().trim();
     const slug = data.slug.toLowerCase().trim();
     await this.ensureSlugIsAvailable(slug);
@@ -99,6 +101,7 @@ export class SuperadminTenantsService {
         `Generated OWNER invitation code for new tenant ${tenant.name}: ${invitation.code} (sent to ${ownerEmail})`,
       );
     }
+    await this.auditService.record({ tenantId: tenant.id, actorUserId, action: 'tenant.created', entityType: 'Tenant', entityId: tenant.id, after: { name: tenant.name, slug: tenant.slug, vertical: tenant.vertical } });
 
     this.logger.log(
       `New tenant created: ${tenant.slug} (${tenant.name}) - Owner: ${ownerEmail} (${
@@ -112,18 +115,20 @@ export class SuperadminTenantsService {
     };
   }
 
-  async updateTenant(id: string, dto: UpdateTenantDto) {
-    await this.ensureTenantExists(id);
+  async updateTenant(id: string, dto: UpdateTenantDto, actorUserId?: string) {
+    const before = await this.ensureTenantExists(id);
 
-    return this.tenantRepo.update(id, {
+    const updated = await this.tenantRepo.update(id, {
       name: dto.name ? dto.name.trim() : undefined,
       vertical: dto.vertical ? dto.vertical.toLowerCase().trim() : undefined,
       isActive: typeof dto.isActive === 'boolean' ? dto.isActive : undefined,
       settings: dto.settings,
     });
+    await this.auditService.record({ tenantId: id, actorUserId, action: 'tenant.updated', entityType: 'Tenant', entityId: id, before: { name: before.name, vertical: before.vertical, isActive: before.isActive }, after: { name: updated.name, vertical: updated.vertical, isActive: updated.isActive } });
+    return updated;
   }
 
-  async deleteTenant(id: string) {
+  async deleteTenant(id: string, actorUserId?: string) {
     const tenant = await this.ensureTenantExists(id);
 
     if (tenant.slug === SystemConstants.SYSTEM_TENANT_SLUG) {
@@ -136,6 +141,7 @@ export class SuperadminTenantsService {
       maintenanceMode: true,
       maintenanceMessage: 'Este comercio fue archivado y no acepta nuevas operaciones.',
     });
+    await this.auditService.record({ tenantId: id, actorUserId, action: 'tenant.archived', entityType: 'Tenant', entityId: id, before: { isActive: tenant.isActive }, after: { isActive: false, maintenanceMode: true }, reason: 'superadmin archive' });
     this.logger.log(`Tenant '${tenant.name}' (${tenant.slug}) archivado.`);
 
     return {
@@ -146,14 +152,16 @@ export class SuperadminTenantsService {
 
   // ── Feature Flag Management ───────────────────────────────────────────────
 
-  async assignFeature(tenantId: string, dto: AssignFeatureDto) {
+  async assignFeature(tenantId: string, dto: AssignFeatureDto, actorUserId?: string) {
     await this.ensureTenantExists(tenantId);
     const featureKey = dto.featureKey.toLowerCase().trim();
 
-    return this.tenantRepo.upsertFeature(tenantId, featureKey, dto.isEnabled);
+    const result = await this.tenantRepo.upsertFeature(tenantId, featureKey, dto.isEnabled);
+    await this.auditService.record({ tenantId, actorUserId, action: 'tenant.feature.updated', entityType: 'TenantFeature', entityId: result.id, after: { featureKey, isEnabled: dto.isEnabled } });
+    return result;
   }
 
-  async batchAssignFeatures(tenantId: string, dto: BatchFeaturesDto) {
+  async batchAssignFeatures(tenantId: string, dto: BatchFeaturesDto, actorUserId?: string) {
     await this.ensureTenantExists(tenantId);
 
     const normalizedFeatures = dto.features.map((f) => ({
@@ -161,7 +169,9 @@ export class SuperadminTenantsService {
       isEnabled: f.isEnabled,
     }));
 
-    return this.tenantRepo.batchUpsertFeatures(tenantId, normalizedFeatures);
+    const result = await this.tenantRepo.batchUpsertFeatures(tenantId, normalizedFeatures);
+    await this.auditService.record({ tenantId, actorUserId, action: 'tenant.features.batch_updated', entityType: 'Tenant', entityId: tenantId, after: { features: normalizedFeatures } });
+    return result;
   }
 
   // ── Platform Roles ────────────────────────────────────────────────────────
