@@ -102,7 +102,7 @@ graph TD
 > **Objetivo:** Cobrar, emitir tickets y procesar pedidos multicanal.
 - [x] **Módulo POS / Caja Diaria:** Apertura y cierre de caja, arqueo en efectivo y medios digitales.
 - [x] **Flujo de Comandas & Facturación:** Adición de productos a una mesa/pedido, estados de cobro, ticket separado por comensal y comprobante fiscal persistido mediante adaptador (`mock`/proveedor externo). La homologación final depende del proveedor autorizado.
-- [x] **Módulo de Delivery & Takeaway:** Canales takeaway/delivery, dirección y estados de entrega; la asignación de cadete/logística queda expuesta mediante los estados de despacho y puede conectarse al operador logístico del comercio.
+- [x] **Módulo de Delivery & Takeaway:** Canales takeaway/delivery, dirección, estados de entrega y asignación de cadete con contacto y ETA; conexión automática a un operador externo queda disponible mediante el mismo contrato.
 - [x] Contrato de intents y webhooks con adaptadores HTTP para Mercado Pago y Stripe; requiere credenciales y validación de firma por ambiente para producción.
 
 ---

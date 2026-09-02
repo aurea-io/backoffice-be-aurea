@@ -733,6 +733,9 @@ model Order {
   channel   OrderChannel @default(dine_in)
   deliveryStatus DeliveryStatus?
   deliveryAddress String?
+  courierName String?
+  courierPhone String?
+  deliveryEta DateTime?
   paymentStatus BookingPaymentStatus @default(pending)
   couponCode String?
   discountCents Int @default(0)
