@@ -8,4 +8,4 @@ permissions:
   contents: write
 jobs:
   release:
-    uses: aurea-io/aurea-ci/.github/workflows/release.yml@dcda2ac35e98d84fe92aa7461ffc95e885af7161
+    uses: aurea-io/aurea-ci/.github/workflows/release.yml@e2b743f6672026d4e582c69b6b9202fc0553f86d
