@@ -102,6 +102,28 @@ export class TenantService {
     const target = await this.prisma.tenantBrandingVersion.findFirst({ where: { tenantId, version } });
     if (!target) throw new NotFoundException('Versión de branding no encontrada.');
     return this.prisma.$transaction(async (tx) => {
+      const tenant = await tx.tenant.findUnique({ where: { id: tenantId }, select: { settings: true } });
+      if (!tenant) throw new NotFoundException('Tenant no encontrado.');
+      const currentSettings = (tenant.settings as Record<string, any>) ?? {};
+      await tx.tenant.update({
+        where: { id: tenantId },
+        data: {
+          settings: {
+            ...currentSettings,
+            branding: {
+              ...(currentSettings.branding ?? {}),
+              primaryColor: target.primaryColor,
+              accentColor: target.accentColor,
+              textColor: target.textColor,
+              fontFamily: target.fontFamily,
+              logoUrl: target.logoUrl,
+              coverUrl: target.coverUrl,
+              layoutTokens: target.layoutTokens ?? undefined,
+              overrides: target.overrides ?? undefined,
+            },
+          },
+        },
+      });
       await tx.tenantBrandingVersion.updateMany({ where: { tenantId, isPublished: true }, data: { isPublished: false } });
       const latest = await tx.tenantBrandingVersion.findFirst({ where: { tenantId }, orderBy: { version: 'desc' } });
       return tx.tenantBrandingVersion.create({
