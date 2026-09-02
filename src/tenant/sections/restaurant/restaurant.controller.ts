@@ -18,6 +18,7 @@ export class RestaurantController {
   @Get('tables') @RequireFeature(FeatureConstants.TABLES) listTables(@CurrentTenant() tenant: TenantContext) { return this.restaurant.listTables(tenant.tenantId); }
   @Post('tables') @RequireFeature(FeatureConstants.TABLES) @Roles(Role.OWNER, Role.MANAGER) createTable(@CurrentTenant() tenant: TenantContext, @Body() dto: CreateTableDto) { return this.restaurant.createTable(tenant.tenantId, dto); }
   @Patch('tables/:id') @RequireFeature(FeatureConstants.TABLES) @Roles(Role.OWNER, Role.MANAGER) updateTable(@CurrentTenant() tenant: TenantContext, @Param('id') id: string, @Body() dto: UpdateTableDto) { return this.restaurant.updateTable(tenant.tenantId, id, dto); }
+  @Get('tables/:id/qr') @RequireFeature(FeatureConstants.TABLES) getTableQr(@CurrentTenant() tenant: TenantContext, @Param('id') id: string) { return this.restaurant.tableQr(tenant.tenantId, id); }
   @Get('orders') @RequireFeature(FeatureConstants.ORDERS) listOrders(@CurrentTenant() tenant: TenantContext) { return this.restaurant.listOrders(tenant.tenantId); }
   @Get('kitchen') @RequireFeature(FeatureConstants.KITCHEN) listKitchen(@CurrentTenant() tenant: TenantContext) { return this.restaurant.listKitchenOrders(tenant.tenantId); }
   @Post('orders') @RequireFeature(FeatureConstants.ORDERS) createOrder(@CurrentTenant() tenant: TenantContext, @Body() dto: CreateOrderDto) { return this.restaurant.createOrder(tenant.tenantId, dto); }

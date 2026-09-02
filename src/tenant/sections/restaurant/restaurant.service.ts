@@ -8,6 +8,13 @@ export class RestaurantService {
   listTables(tenantId: string) { return this.prisma.restaurantTable.findMany({ where: { tenantId }, include: { orders: { where: { status: { not: 'paid' as any } }, include: { lines: true } } }, orderBy: { number: 'asc' } }); }
   createTable(tenantId: string, dto: CreateTableDto) { return this.prisma.restaurantTable.create({ data: { tenantId, number: dto.number, seats: dto.seats ?? 2 } }); }
   async updateTable(tenantId: string, id: string, dto: UpdateTableDto) { const table = await this.prisma.restaurantTable.findFirst({ where: { id, tenantId } }); if (!table) throw new NotFoundException('Mesa no encontrada.'); return this.prisma.restaurantTable.update({ where: { id }, data: { status: dto.status } }); }
+  async tableQr(tenantId: string, id: string) {
+    const table = await this.prisma.restaurantTable.findFirst({ where: { id, tenantId }, include: { tenant: { select: { slug: true, name: true } } } });
+    if (!table) throw new NotFoundException('Mesa no encontrada.');
+    const appUrl = (process.env.PUBLIC_APP_URL || 'http://localhost:4173').replace(/\/$/, '');
+    const menuUrl = `${appUrl}/apps/web/#restaurant?tenant=${encodeURIComponent(table.tenant.slug)}&table=${table.number}`;
+    return { tableId: table.id, tableNumber: table.number, tenantName: table.tenant.name, menuUrl, qrImageUrl: `https://quickchart.io/qr?size=320&text=${encodeURIComponent(menuUrl)}` };
+  }
   listOrders(tenantId: string) { return this.prisma.order.findMany({ where: { tenantId }, include: { table: true, lines: { include: { catalogItem: true } } }, orderBy: { createdAt: 'desc' } }); }
   listKitchenOrders(tenantId: string) { return this.prisma.order.findMany({ where: { tenantId, status: { in: ['open' as any, 'preparing' as any, 'ready' as any] } }, include: { table: true, lines: { include: { catalogItem: true } } }, orderBy: { createdAt: 'asc' } }); }
   async createOrder(tenantId: string, dto: CreateOrderDto) {
