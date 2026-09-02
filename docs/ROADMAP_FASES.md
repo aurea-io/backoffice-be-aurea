@@ -75,7 +75,7 @@ graph TD
   - Modo Servicio / Turno (duración en minutos, precio, profesional asignado).
 - [x] Grupos de Opciones / Modificadores (ej: puntos de cocción, agregados, salsas, talles, colores).
 - [x] Carga masiva / Importación de productos vía CSV; Excel puede exportarse a CSV antes de importar.
-- [ ] Carga y optimización de imágenes multimedia por producto.
+- [x] Carga y optimización client-side de imágenes por producto; el asset se redimensiona y comprime antes de persistirlo, con CDN/storage externo como mejora de producción.
 
 ---
 
