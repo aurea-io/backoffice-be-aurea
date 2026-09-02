@@ -78,14 +78,20 @@ export class TenantService {
   }
 
   async getAnalytics(tenantId: string) {
-    const [members, bookings, orders, inventory, activeFeatures] = await Promise.all([
+    const [members, bookings, orders, inventory, activeFeatures, orderDetails, bookingStatuses] = await Promise.all([
       this.prisma.tenantUser.count({ where: { tenantId, isActive: true } }),
       this.prisma.booking.count({ where: { tenantId, status: { not: 'canceled' } } }),
       this.prisma.order.count({ where: { tenantId, status: { not: 'canceled' } } }),
       this.prisma.inventoryItem.aggregate({ where: { tenantId, isActive: true }, _count: { id: true }, _sum: { quantity: true } }),
       this.prisma.tenantFeature.count({ where: { tenantId, isEnabled: true } }),
+      this.prisma.order.findMany({ where: { tenantId, status: { notIn: ['canceled' as any] } }, select: { status: true, channel: true, createdAt: true, lines: { select: { quantity: true, unitPriceCents: true, catalogItem: { select: { title: true } } } } }, orderBy: { createdAt: 'desc' }, take: 5000 }),
+      this.prisma.booking.groupBy({ by: ['status'], where: { tenantId } as any, _count: { _all: true } }),
     ]);
-    return { members, bookings, orders, inventoryItems: inventory._count.id, inventoryUnits: inventory._sum.quantity ?? 0, activeFeatures };
+    const products = new Map<string, { title: string; quantity: number; revenueCents: number }>();
+    let revenueCents = 0;
+    const channels: Record<string, number> = {};
+    orderDetails.forEach((order) => { channels[order.channel] = (channels[order.channel] || 0) + 1; order.lines.forEach((line) => { const quantity = line.quantity; const revenue = quantity * line.unitPriceCents; revenueCents += revenue; const title = line.catalogItem?.title || 'Ítem'; const current = products.get(title) || { title, quantity: 0, revenueCents: 0 }; current.quantity += quantity; current.revenueCents += revenue; products.set(title, current); }); });
+    return { members, bookings, orders, inventoryItems: inventory._count.id, inventoryUnits: inventory._sum.quantity ?? 0, activeFeatures, revenueCents, averageTicketCents: orderDetails.length ? Math.round(revenueCents / orderDetails.length) : 0, ordersByChannel: channels, topProducts: [...products.values()].sort((a, b) => b.quantity - a.quantity).slice(0, 5), bookingsByStatus: bookingStatuses.map((entry) => ({ status: entry.status, count: entry._count._all })) };
   }
 
   async addMember(tenantId: string, email: string, role: Role = Role.STAFF, permissions?: string[]) {

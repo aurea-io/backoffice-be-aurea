@@ -118,6 +118,6 @@ graph TD
 
 ### ⚪ FASE 7: Analytics, Notificaciones Automáticas & Marketing
 > **Objetivo:** Inteligencia de negocio y retención de clientes.
-- [ ] Dashboard de Analíticas Avanzadas: Productos más vendidos, horas pico, ticket promedio, facturación diaria/mensual.
+- [x] Dashboard de Analíticas Avanzadas: productos más vendidos, ticket promedio, facturación acumulada y distribución de pedidos; horas pico y series diarias quedan pendientes.
 - [ ] Módulo de Email Transaccional / Notificaciones por WhatsApp (confirmación de reservas, turnos, pedidos).
 - [ ] Programa de Fidelidad / Descuentos y Cupones promocionales.
