@@ -1,4 +1,4 @@
-name: Release
+name: Release # Contract tracked by aurea-ci#24
 on:
   workflow_dispatch:
 permissions:
