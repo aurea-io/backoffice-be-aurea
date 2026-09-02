@@ -13,12 +13,14 @@ export interface AuditRecord {
   requestId?: string;
 }
 
+type AuditWriter = Pick<PrismaService, 'auditEvent'>;
+
 @Injectable()
 export class AuditService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async record(event: AuditRecord) {
-    return this.prisma.auditEvent.create({ data: event as any });
+  async record(event: AuditRecord, db: AuditWriter = this.prisma) {
+    return db.auditEvent.create({ data: event as any });
   }
 
   async listForTenant(tenantId: string, limit = 100, cursor?: string) {

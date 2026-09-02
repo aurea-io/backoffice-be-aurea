@@ -16,6 +16,7 @@ import type {
   BatchFeaturesDto,
 } from './dto/index.js';
 import { AuditService } from '../../audit/audit.service.js';
+import { PrismaService } from '../../prisma/prisma.service.js';
 
 const VERTICAL_DEFAULT_PACKAGES: Record<string, string[]> = {
   gastronomy: ['catalog', 'tables', 'delivery', 'social_hub'],
@@ -35,6 +36,7 @@ export class SuperadminTenantsService {
     private readonly userRepo: UserRepository,
     private readonly invitationsService: InvitationsService,
     private readonly auditService: AuditService,
+    private readonly prisma: PrismaService,
   ) {}
 
   // ── Tenant Queries ────────────────────────────────────────────────────────
@@ -118,14 +120,15 @@ export class SuperadminTenantsService {
   async updateTenant(id: string, dto: UpdateTenantDto, actorUserId?: string) {
     const before = await this.ensureTenantExists(id);
 
-    const updated = await this.tenantRepo.update(id, {
-      name: dto.name ? dto.name.trim() : undefined,
-      vertical: dto.vertical ? dto.vertical.toLowerCase().trim() : undefined,
-      isActive: typeof dto.isActive === 'boolean' ? dto.isActive : undefined,
-      settings: dto.settings,
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.tenant.update({
+        where: { id },
+        data: { name: dto.name ? dto.name.trim() : undefined, vertical: dto.vertical ? dto.vertical.toLowerCase().trim() : undefined, isActive: typeof dto.isActive === 'boolean' ? dto.isActive : undefined, settings: dto.settings },
+        include: { features: true },
+      });
+      await this.auditService.record({ tenantId: id, actorUserId, action: 'tenant.updated', entityType: 'Tenant', entityId: id, before: { name: before.name, vertical: before.vertical, isActive: before.isActive }, after: { name: updated.name, vertical: updated.vertical, isActive: updated.isActive } }, tx);
+      return updated;
     });
-    await this.auditService.record({ tenantId: id, actorUserId, action: 'tenant.updated', entityType: 'Tenant', entityId: id, before: { name: before.name, vertical: before.vertical, isActive: before.isActive }, after: { name: updated.name, vertical: updated.vertical, isActive: updated.isActive } });
-    return updated;
   }
 
   async deleteTenant(id: string, actorUserId?: string) {
@@ -135,13 +138,10 @@ export class SuperadminTenantsService {
       throw new BadRequestException('El tenant del sistema no puede ser eliminado.');
     }
 
-    await this.tenantRepo.update(id, {
-      isActive: false,
-      deprecatedAt: new Date(),
-      maintenanceMode: true,
-      maintenanceMessage: 'Este comercio fue archivado y no acepta nuevas operaciones.',
+    await this.prisma.$transaction(async (tx) => {
+      await tx.tenant.update({ where: { id }, data: { isActive: false, deprecatedAt: new Date(), maintenanceMode: true, maintenanceMessage: 'Este comercio fue archivado y no acepta nuevas operaciones.' } });
+      await this.auditService.record({ tenantId: id, actorUserId, action: 'tenant.archived', entityType: 'Tenant', entityId: id, before: { isActive: tenant.isActive }, after: { isActive: false, maintenanceMode: true }, reason: 'superadmin archive' }, tx);
     });
-    await this.auditService.record({ tenantId: id, actorUserId, action: 'tenant.archived', entityType: 'Tenant', entityId: id, before: { isActive: tenant.isActive }, after: { isActive: false, maintenanceMode: true }, reason: 'superadmin archive' });
     this.logger.log(`Tenant '${tenant.name}' (${tenant.slug}) archivado.`);
 
     return {
@@ -156,9 +156,12 @@ export class SuperadminTenantsService {
     await this.ensureTenantExists(tenantId);
     const featureKey = dto.featureKey.toLowerCase().trim();
 
-    const result = await this.tenantRepo.upsertFeature(tenantId, featureKey, dto.isEnabled);
-    await this.auditService.record({ tenantId, actorUserId, action: 'tenant.feature.updated', entityType: 'TenantFeature', entityId: result.id, after: { featureKey, isEnabled: dto.isEnabled } });
-    return result;
+    return this.prisma.$transaction(async (tx) => {
+      const previous = await tx.tenantFeature.findUnique({ where: { tenantId_featureKey: { tenantId, featureKey } } });
+      const result = await tx.tenantFeature.upsert({ where: { tenantId_featureKey: { tenantId, featureKey } }, update: { isEnabled: dto.isEnabled }, create: { tenantId, featureKey, isEnabled: dto.isEnabled } });
+      await this.auditService.record({ tenantId, actorUserId, action: 'tenant.feature.updated', entityType: 'TenantFeature', entityId: result.id, before: previous ? { featureKey, isEnabled: previous.isEnabled } : { featureKey, absent: true }, after: { featureKey, isEnabled: dto.isEnabled } }, tx);
+      return result;
+    });
   }
 
   async batchAssignFeatures(tenantId: string, dto: BatchFeaturesDto, actorUserId?: string) {
@@ -169,9 +172,12 @@ export class SuperadminTenantsService {
       isEnabled: f.isEnabled,
     }));
 
-    const result = await this.tenantRepo.batchUpsertFeatures(tenantId, normalizedFeatures);
-    await this.auditService.record({ tenantId, actorUserId, action: 'tenant.features.batch_updated', entityType: 'Tenant', entityId: tenantId, after: { features: normalizedFeatures } });
-    return result;
+    return this.prisma.$transaction(async (tx) => {
+      const previous = await tx.tenantFeature.findMany({ where: { tenantId, featureKey: { in: normalizedFeatures.map((feature) => feature.featureKey) } } });
+      const result = await Promise.all(normalizedFeatures.map((feature) => tx.tenantFeature.upsert({ where: { tenantId_featureKey: { tenantId, featureKey: feature.featureKey } }, update: { isEnabled: feature.isEnabled }, create: { tenantId, featureKey: feature.featureKey, isEnabled: feature.isEnabled } })));
+      await this.auditService.record({ tenantId, actorUserId, action: 'tenant.features.batch_updated', entityType: 'Tenant', entityId: tenantId, before: { features: previous.map((feature) => ({ featureKey: feature.featureKey, isEnabled: feature.isEnabled })) }, after: { features: normalizedFeatures } }, tx);
+      return result;
+    });
   }
 
   // ── Platform Roles ────────────────────────────────────────────────────────
