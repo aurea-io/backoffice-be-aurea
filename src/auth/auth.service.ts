@@ -244,6 +244,7 @@ export class AuthService {
     return this.userRepo.update(userId, {
       name: dto.name ? dto.name.trim() : undefined,
       avatarUrl: dto.avatarUrl,
+      preferences: dto.preferences,
     });
   }
 

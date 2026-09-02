@@ -34,12 +34,19 @@ export class RolesGuard implements CanActivate {
     }
 
     // 1. Check if user is a global platform SUPERADMIN
-    const userSuperadminMembership = await (this.tenantRepo as any).findPlatformMembership?.(userId) ?? await (this.tenantRepo as any).findSuperadminMembership?.(userId);
-    const isGlobalSuperadmin = Boolean(userSuperadminMembership);
+    const userSuperadminMembership = await (this.tenantRepo as any).findPlatformMembership?.(userId, 'SUPERADMIN') ?? await (this.tenantRepo as any).findSuperadminMembership?.(userId);
+    const platformOwner = await (this.tenantRepo as any).findPlatformMembership?.(userId, 'platform_owner');
+    const platformReadonly = await (this.tenantRepo as any).findPlatformMembership?.(userId, 'platform_readonly');
+    const isGlobalSuperadmin = Boolean(userSuperadminMembership || platformOwner);
 
     if (requiredRoles.includes(Role.SUPERADMIN)) {
       if (isGlobalSuperadmin) {
         return true;
+      }
+      if (platformReadonly) {
+        const method = String(request.method ?? 'GET').toUpperCase();
+        if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') return true;
+        throw new ForbiddenException('INSUFFICIENT_PERMISSION: platform_readonly is read-only.');
       }
       throw new ForbiddenException(
         'Restricted access: AUREA Platform Superadmin privileges required.',

@@ -124,6 +124,49 @@ export class InvitationsService {
     return invitation;
   }
 
+  async verifyPublicCode(code: string) {
+    const normalizedCode = code.trim().toUpperCase();
+    const invitation = await this.prisma.invitation.findUnique({ where: { code: normalizedCode } });
+    if (!invitation || !invitation.tenantId || invitation.used || new Date(invitation.expiresAt) < new Date()) {
+      throw new BadRequestException('La invitación es inválida, está vencida o ya fue utilizada.');
+    }
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: invitation.tenantId },
+      select: { id: true, name: true, slug: true, vertical: true, isActive: true },
+    });
+    if (!tenant?.isActive) throw new BadRequestException('El comercio asociado no está activo.');
+    return {
+      id: invitation.id,
+      code: invitation.code,
+      email: invitation.email,
+      role: invitation.role,
+      expiresAt: invitation.expiresAt,
+      tenant,
+    };
+  }
+
+  async accept(code: string, userId: string) {
+    const invitation = await this.verifyPublicCode(code);
+    const existing = await this.prisma.tenantUser.findUnique({
+      where: { tenantId_userId: { tenantId: invitation.tenant.id, userId } },
+    });
+    if (existing?.isActive) throw new ConflictException('Ya perteneces a este comercio.');
+
+    return this.prisma.$transaction(async (tx) => {
+      const claimed = await tx.invitation.updateMany({
+        where: { id: invitation.id, used: false, expiresAt: { gt: new Date() } },
+        data: { used: true, usedAt: new Date() },
+      });
+      if (claimed.count !== 1) throw new ConflictException('La invitación ya fue utilizada.');
+      const membership = await tx.tenantUser.upsert({
+        where: { tenantId_userId: { tenantId: invitation.tenant.id, userId } },
+        update: { role: invitation.role, isActive: true },
+        create: { tenantId: invitation.tenant.id, userId, role: invitation.role, permissions: [] },
+      });
+      return { success: true, tenant: invitation.tenant, membership };
+    });
+  }
+
   async markAsUsed(id: string) {
     return this.prisma.invitation.update({
       where: { id },

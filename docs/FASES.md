@@ -33,10 +33,12 @@ graph TD
 
 ## 💳 2. Planes, Membresías y Suscripciones de Tenants
 
+> **Estado de implementación:** El esquema Prisma, el CRUD de planes, la asignación a tenants, la sincronización de features y la consulta `/api/tenant/billing` ya están disponibles. Restan checkout, cobro recurrente y enforcement completo de límites.
+
 Los comercios pagan un abono recurrente (mensual/anual). Cada plan empaqueta un conjunto de módulos y límites, con la posibilidad de contratar add-ons extras.
 
 ### ⏳ Lo que resta por hacer (Planes & Suscripciones)
-- [ ] **Modelo de Datos de Planes (`Plan` & `Subscription` en Prisma):**
+- [x] **Modelo de Datos de Planes (`Plan` & `Subscription` en Prisma):**
   - Entidad `Plan`:
     - `name` (ej: *"Gastronomía Pro"*, *"Barbería Starter"*, *"Stock Básico"*).
     - `slug` (identificador único).
@@ -51,16 +53,16 @@ Los comercios pagan un abono recurrente (mensual/anual). Cada plan empaqueta un 
     - `billingCycle` (`MONTHLY`, `ANNUAL`).
     - `currentPeriodStart` y `currentPeriodEnd` (control de vencimiento del mes).
     - `extraAddons: string[]` (módulos extras fuera del plan base).
-- [ ] **Panel Superadmin: Gestión Integral de Planes (`/api/superadmin/plans` & `/superadmin/plans`):**
+- [x] **Panel Superadmin: Gestión Integral de Planes (`/api/superadmin/plans` & `/superadmin/plans`):**
   - **Crear y Editar Planes:** Modificar nombre, precio mensual/anual, moneda, límites de uso y estado activo.
   - **Asignación Dinámica de Módulos al Plan:** Selector con checkboxes para agregar o quitar módulos (`includedFeatures: string[]`) de un plan en cualquier momento.
   - **Propagación & Sincronización:** Posibilidad de elegir si al modificar los módulos de un plan se actualizan automáticamente todos los comercios ya suscritos o si aplica solo a futuras altas.
   - **Catálogo de Módulos Globales:** Registro maestro de features disponibles en el ecosistema (`catalog`, `tables`, `kitchen_display`, `appointments`, `pos_cashier`, `inventory`, `delivery`, `analytics`, etc.).
-- [ ] **Asignación de Plan al Crear/Editar Tenant:**
+- [x] **Asignación de Plan al Crear/Editar Tenant:**
   - Al dar de alta o editar un comercio desde Superadmin, se selecciona su Plan base y se activan en lote todas las `TenantFeature` incluidas, permitiendo añadir add-ons adicionales si el cliente contrató módulos extra.
-- [ ] **Guard de Estado de Suscripción (`SubscriptionGuard`):**
+- [x] **Guard de Estado de Suscripción (`SubscriptionGuard`):**
   - Si el abono mensual está vencido (`PAST_DUE` o `CANCELED`), se muestra un banner de pago pendiente o se restringe la operativa al modo solo lectura.
-- [ ] **Pantalla de Mi Suscripción / Plan para el Dueño (`/settings/billing`):**
+- [x] **Pantalla de Mi Suscripción / Plan para el Dueño (`/settings/billing`):**
   - Vista donde el cliente ve:
     - Plan actual contratado y fecha del próximo cobro.
     - Módulos incluidos y estado activo.
@@ -77,18 +79,18 @@ Los comercios pagan un abono recurrente (mensual/anual). Cada plan empaqueta un 
 | **FBAC Nivel 1 (`TenantFeature`)** | Backend (`Prisma`) | Entidad `TenantFeature` con clave única por tenant (`tenantId`, `featureKey`, `isEnabled`). |
 | **CRUD Superadmin de Tenants** | Backend (`NestJS`) | Endpoints `/api/superadmin/tenants` (`GET`, `POST`, `PATCH`, `DELETE`). |
 | **Asignación de Módulos (FBAC)** | Backend (`NestJS`) | Endpoints `/api/superadmin/tenants/:id/features` (`POST`, `PUT` batch). |
-| **Borrado Seguro en Cascada** | Backend (`NestJS`) | Eliminación atómica del tenant, sus membresías, catálogo y features asociadas. |
+| **Archivado seguro del tenant** | Backend (`NestJS`) | Desactiva el tenant y conserva sus datos para auditoría y recuperación. |
 | **Panel de Comercios Superadmin** | Frontend (`React`) | Vista `SuperadminTenantsPage.tsx` con listado, filtros por rubro/vertical, métricas y búsqueda en vivo. |
 | **Modales de Gestión** | Frontend (`React`) | Modales para Alta de Comercio, Edición de Datos, Asignación de Módulos y Confirmación de Borrado. |
 | **Invitación Automática al Dueño** | Backend + Frontend | Al crear un comercio se genera un código de invitación `AUR-XXXXX` con rol `OWNER` para el dueño del local. |
 | **Contexto de Tenant Activo** | Frontend (`Zustand`) | Store `useTenantStore` que persiste el `activeTenantId` e inyecta el header `x-tenant-id` en cada petición API. |
 
 ### ⏳ Lo que resta por hacer (Tenants)
-- [ ] **Configuración de Datos del Local por el Dueño (Settings):**
+- [x] **Configuración de Datos del Local por el Dueño (Settings):**
   - Pantalla en el Backoffice del comercio (`/settings/tenant`) para que el dueño edite logo, portada, horarios de atención, teléfonos de contacto y enlaces de redes sociales.
-- [ ] **Switch de Comercios en Topbar:**
+- [x] **Switch de Comercios en Topbar:**
   - Selector desplegable en la barra superior para usuarios que sean dueños o empleados de más de 1 comercio simultáneamente.
-- [ ] **Módulo de Métricas Básicas por Tenant:**
+- [x] **Módulo de Métricas Básicas por Tenant:**
   - Resumen en el Dashboard del comercio sobre estado de su plan, cantidad de empleados activos y módulos contratados.
 
 ---
@@ -105,22 +107,22 @@ Los comercios pagan un abono recurrente (mensual/anual). Cada plan empaqueta un 
 | **Pantalla de Invitaciones** | Frontend (`React`) | Componente `InvitationsPage.tsx` con generador de códigos, copiado de enlace directo `?code=...` y compartir vía WhatsApp/Email. |
 
 ### ⏳ Lo que resta por hacer (Empleados & Permisos)
-- [ ] **Diccionario Centralizado de Presets por Rubro (`presets.config.ts`):**
+- [x] **Diccionario Centralizado de Presets por Rubro (`presets.config.ts`):**
   - Configuración declarativa sin `if/else`:
     - **Gastronomía:** Mozo (`tables.view`, `orders.create`), Cocinero (`kitchen.view`), Cajero (`pos.cashier`), Encargado (`all`).
     - **Belleza / Estética:** Barbero / Estilista (`appointments.self`, `clients.view`), Recepción (`appointments.all`, `pos.cashier`), Encargado (`all`).
     - **Pastelería / Retail:** Vendedor (`catalog.view`, `pos.cashier`), Pastelero / Depósito (`inventory.manage`), Encargado (`all`).
-- [ ] **Modal Inteligente de Invitación de Empleados:**
+- [x] **Modal Inteligente de Invitación de Empleados:**
   - Formulario en `MembersPage.tsx` donde el dueño ingresa el email, elige un rol sugerido con 1 clic y, opcionalmente, despliega un acordeón para personalizar permisos específicos.
-- [ ] **Guard de Permisos en Backend (`PermissionsGuard`):**
+- [x] **Guard de Permisos en Backend (`PermissionsGuard`):**
   - Decorador `@RequirePermissions('tables.view', ...)` en NestJS que valide que:
     1. La feature madre esté activa en el tenant (`TenantFeature.isEnabled === true`).
     2. El usuario tenga el permiso en su arreglo `TenantUser.permissions` o sea `OWNER`/`SUPERADMIN`.
-- [ ] **Navegación Dinámica en Frontend (Data-Driven Sidebar):**
+- [x] **Navegación Dinámica en Frontend (Data-Driven Sidebar):**
   - Configurar `NAV_ITEMS` declarativos para que el menú lateral se filtre automáticamente mostrando solo los módulos y submódulos para los que el empleado tiene permisos.
-- [ ] **Acciones de Gestión de Empleados:**
-  - Modificar rol/permisos de un empleado existente sin tener que re-invitarlo.
-  - Activar / Suspender acceso de un empleado (`TenantUser.isActive`).
-  - Remover empleado del comercio.
-- [ ] **Conexión de Rutas en `App.tsx` y `Sidebar.tsx`:**
+- [x] **Acciones de Gestión de Empleados:**
+  - [x] Modificar rol/permisos de un empleado existente sin tener que re-invitarlo.
+  - [x] Activar / Suspender acceso de un empleado (`TenantUser.isActive`).
+  - [x] Remover empleado del comercio con protección del último OWNER.
+- [x] **Conexión de Rutas en `App.tsx` y `Sidebar.tsx`:**
   - Habilitar los accesos de `/members` e `/invitations` en la barra de navegación del Backoffice para los roles con permisos de administración.

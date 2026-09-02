@@ -56,25 +56,26 @@ graph TD
 
 ### 🟡 FASE 2: Gestión de Equipo del Tenant & Control de Acceso Granular de Empleados
 > **Estado:** 🎯 **PRÓXIMA FASE (En Curso)**
-- [ ] Conectar la vista de **Equipo y Colaboradores** (`MembersPage.tsx`) en la navegación del comercio.
-- [ ] Extender el modal de invitación de empleados dentro del tenant:
+- [x] Conectar la vista de **Equipo y Colaboradores** (`MembersPage.tsx`) en la navegación del comercio.
+- [x] Extender el modal de invitación de empleados dentro del tenant:
   - Selección de Rol (`MANAGER`, `STAFF`, `CASHIER`).
   - Checkboxes para asignar permisos y submódulos específicos según las features activas del local.
-- [ ] Guard y Decorador en Backend `@RequirePermissions('tables.view', 'catalog.edit')` que valide contra `TenantUser.permissions`.
-- [ ] Filtrado dinámico del Sidebar del empleado en Frontend para mostrar solo las opciones para las que tiene permisos.
-- [ ] Perfil del empleado y configuración de preferencias individuales.
+- [x] Guard y Decorador en Backend `@RequirePermissions('tables.view', 'catalog.edit')` que valide contra `TenantUser.permissions`.
+- [x] Filtrado dinámico del Sidebar y protección de rutas del empleado por permisos granulares.
+- [x] Perfil del empleado y configuración de preferencias individuales.
 
 ---
 
 ### 🔵 FASE 3: Catálogo Universal, Categorías, Modificadores & Variantes
 > **Objetivo:** Permitir a cualquier tipo de comercio cargar sus productos o servicios.
-- [ ] CRUD de Categorías y Subcategorías jerárquicas.
-- [ ] Modelo de Items de Catálogo enriquecido:
+- [x] Catálogo base de productos y servicios con precio, duración, imagen y metadatos.
+- [x] CRUD de Categorías y Subcategorías jerárquicas.
+- [x] Modelo de Items de Catálogo enriquecido:
   - Modo Producto Físico (artículos, precios, costo, SKU, stock inicial).
   - Modo Servicio / Turno (duración en minutos, precio, profesional asignado).
-- [ ] Grupos de Opciones / Modificadores (ej: puntos de cocción, agregados, salsas, talles, colores).
-- [ ] Carga masiva / Importación de productos vía CSV / Excel.
-- [ ] Carga y optimización de imágenes multimedia por producto.
+- [x] Grupos de Opciones / Modificadores (ej: puntos de cocción, agregados, salsas, talles, colores).
+- [x] Carga masiva / Importación de productos vía CSV; Excel puede exportarse a CSV antes de importar.
+- [x] Carga y optimización client-side de imágenes por producto; el asset se redimensiona y comprime antes de persistirlo, con CDN/storage externo como mejora de producción.
 
 ---
 
@@ -82,40 +83,41 @@ graph TD
 > **Objetivo:** Dotar a cada rubro de su herramienta de trabajo diaria.
 
 #### Vertical Gastronómica:
-- [ ] **Gestión de Salón & Mesas (`tables`):** Mapa interactivo de mesas, estados (Libre, Ocupada, Reservada, Por cobrar).
-- [ ] **Comandera / KDS Pantalla de Cocina (`kitchen`):** Vista en tiempo real para cocineros con tiempos de preparación y despacho.
-- [ ] **Reservas de Mesa (`bookings`):** Agenda de comensales y confirmaciones.
+- [x] **Gestión de Salón & Mesas (`tables`):** Modelo, API de estados y pantalla operativa inicial.
+- [x] **Pedidos base:** Modelo de pedidos/líneas, validación de catálogo y estados de preparación.
+- [x] **Comandera / KDS Pantalla de Cocina (`kitchen`):** Vista operativa con comandas, estados de preparación/despacho y refresco periódico.
+- [x] **Reservas de Mesa (`bookings`):** Agenda pública de mesas, disponibilidad, asignación automática y confirmaciones; la agenda de turnos de servicios también está implementada.
 
 #### Vertical Belleza / Salud / Servicios:
-- [ ] **Agenda de Turnos & Citas (`appointments`):** Calendario por profesional/box, confirmación y recordatorios.
-- [ ] **Ficha de Clientes / Historial (`clients`):** Registro de tratamientos y notas de atención.
+- [x] **Agenda de Turnos & Citas (`appointments`):** Reservas persistentes, disponibilidad, solapamientos y confirmación/cancelación.
+- [x] **Ficha de Clientes / Historial (`clients`):** Registro de clientes, contacto, historial de turnos y notas de atención.
 
 #### Vertical Pastelería / Retail / Stock:
-- [ ] **Control de Stock & Materias Primas (`inventory`):** Descuento automático por receta o venta de producto.
-- [ ] **Alertas de Stock Mínimo.**
+- [x] **Control de Stock base (`inventory`):** Artículos, ajustes y movimientos persistentes.
+- [x] **Alertas de Stock Mínimo** en la vista de inventario.
 
 ---
 
 ### 🟠 FASE 5: Punto de Venta (POS / Caja), Pedidos, Cobros y Delivery
 > **Objetivo:** Cobrar, emitir tickets y procesar pedidos multicanal.
-- [ ] **Módulo POS / Caja Diaria:** Apertura y cierre de caja, arqueo en efectivo y medios digitales.
-- [ ] **Flujo de Comandas & Facturación:** Adición de productos a una mesa/pedido, división de cuentas y ticket de venta.
-- [ ] **Módulo de Delivery & Takeaway:** Gestión de pedidos para llevar o con cadete propio.
-- [ ] Integración con pasarelas de pago (Mercado Pago QR / Checkout, Stripe).
+- [x] **Módulo POS / Caja Diaria:** Apertura y cierre de caja, arqueo en efectivo y medios digitales.
+- [x] **Flujo de Comandas & Facturación:** Adición de productos a una mesa/pedido, estados de cobro, ticket separado por comensal y comprobante fiscal persistido mediante adaptador (`mock`/proveedor externo). La homologación final depende del proveedor autorizado.
+- [x] **Módulo de Delivery & Takeaway:** Canales takeaway/delivery, dirección, estados de entrega y asignación de cadete con contacto y ETA; conexión automática a un operador externo queda disponible mediante el mismo contrato.
+- [x] Contrato de intents y webhooks con adaptadores HTTP para Mercado Pago y Stripe; requiere credenciales y validación de firma por ambiente para producción.
 
 ---
 
 ### 🔴 FASE 6: Integración con Portal Público (Aurea Pages Template) & Menú QR
 > **Objetivo:** Conectar el backoffice con la web pública del cliente.
-- [ ] Sincronización automática de catálogo y disponibilidad en tiempo real con la plantilla pública (`aurea-pages-template`).
-- [ ] Generador de Códigos QR para mesas (abre el menú digital interactivo).
-- [ ] Pedidos directos desde el celular del comensale / cliente (Self-Ordering).
-- [ ] Personalización del Theme y Branding del local desde el Backoffice (colores, logo, tipografía, portada).
+- [x] Sincronización de catálogo y envío de pedidos desde la plantilla pública; endpoint SSE autenticado para eventos operativos y fallback de refresco periódico.
+- [x] Generador de Códigos QR para mesas (abre el menú digital interactivo).
+- [x] Pedidos directos desde el celular del comensale / cliente (Self-Ordering).
+- [x] Personalización del Theme y Branding del local desde el Backoffice (colores, logo, tipografía, portada).
 
 ---
 
 ### ⚪ FASE 7: Analytics, Notificaciones Automáticas & Marketing
 > **Objetivo:** Inteligencia de negocio y retención de clientes.
-- [ ] Dashboard de Analíticas Avanzadas: Productos más vendidos, horas pico, ticket promedio, facturación diaria/mensual.
-- [ ] Módulo de Email Transaccional / Notificaciones por WhatsApp (confirmación de reservas, turnos, pedidos).
-- [ ] Programa de Fidelidad / Descuentos y Cupones promocionales.
+- [x] Dashboard de Analíticas Avanzadas: productos más vendidos, ticket promedio, facturación acumulada, distribución de pedidos, horas pico y series diarias.
+- [x] Módulo de Email Transaccional / Notificaciones por WhatsApp: cola persistente, reintentos y confirmación de turnos; requiere credenciales del proveedor.
+- [x] Descuentos, cupones y fidelización: creación, vencimiento, límite de usos, aplicación a pedidos públicos y cuentas de puntos por cliente con acumulación/canje y niveles.

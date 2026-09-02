@@ -39,7 +39,7 @@ export class BootstrapService {
       },
       capabilities: [...new Set([...tenant.features.map((f) => f.featureKey), ...capabilities])],
       version: brandingVersion,
-      stylesheet: `/api/style/${encodeURIComponent(tenant.slug)}.css`,
+      stylesheet: `/api/style/${encodeURIComponent(tenant.slug)}.css?v=${brandingVersion}`,
     };
   }
 }

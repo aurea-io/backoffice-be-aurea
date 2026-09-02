@@ -9,4 +9,7 @@ export class UpdateProfileDto {
   @IsString()
   @IsOptional()
   avatarUrl?: string;
+
+  @IsOptional()
+  preferences?: Record<string, unknown>;
 }

@@ -15,6 +15,7 @@ export class AuthConstants {
     email: true,
     name: true,
     avatarUrl: true,
+    preferences: true,
     active: true,
     createdAt: true,
     updatedAt: true,

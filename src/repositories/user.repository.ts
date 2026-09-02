@@ -87,6 +87,7 @@ export class UserRepository {
     data: Partial<{
       name: string;
       avatarUrl: string;
+      preferences: Record<string, unknown>;
       passwordHash: string;
       googleId: string;
       active: boolean;
@@ -94,7 +95,7 @@ export class UserRepository {
   ) {
     return this.prisma.user.update({
       where: { id },
-      data,
+      data: data as any,
       select: AuthConstants.USER_SAFE_SELECT,
     });
   }

@@ -45,6 +45,86 @@ enum BillingInterval {
   one_time
 }
 
+enum BookingStatus {
+  requested
+  confirmed
+  completed
+  canceled
+  no_show
+}
+
+enum BookingPaymentStatus {
+  pending
+  paid
+  refunded
+  waived
+}
+
+enum TableBookingStatus {
+  requested
+  confirmed
+  canceled
+  completed
+}
+
+enum RestaurantTableStatus {
+  available
+  occupied
+  reserved
+  billing
+}
+
+enum OrderStatus {
+  open
+  preparing
+  ready
+  served
+  paid
+  canceled
+}
+
+enum CashSessionStatus {
+  open
+  closed
+}
+
+enum OrderChannel {
+  dine_in
+  takeaway
+  delivery
+}
+
+enum DeliveryStatus {
+  pending
+  preparing
+  dispatched
+  delivered
+  canceled
+}
+
+enum PaymentStatus {
+  pending
+  approved
+  rejected
+  refunded
+}
+
+enum NotificationChannel {
+  email
+  whatsapp
+}
+
+enum NotificationStatus {
+  queued
+  sent
+  failed
+}
+
+enum DiscountType {
+  percentage
+  fixed
+}
+
 // -----------------------------------------------------------------------------
 // MODELS
 // -----------------------------------------------------------------------------
@@ -56,6 +136,7 @@ model User {
   passwordHash String?
   googleId     String?  @unique
   avatarUrl    String?
+  preferences  Json?
   active       Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -63,6 +144,7 @@ model User {
   memberships  TenantUser[]
   authTokens   AuthToken[] @relation("UserAuthTokens")
   platformMemberships PlatformMembership[]
+  auditEvents AuditEvent[]
 }
 
 model Tenant {
@@ -85,10 +167,47 @@ model Tenant {
   subscriptions Subscription[]
   creditLedger CreditLedger[]
   catalogItems CatalogItem[]
+  catalogCategories CatalogCategory[]
+  catalogModifierGroups CatalogModifierGroup[]
   brandingVersions TenantBrandingVersion[]
+  bookings     Booking[]
+  customers    Customer[]
+  loyaltyAccounts LoyaltyAccount[]
+  inventoryItems InventoryItem[]
+  restaurantTables RestaurantTable[]
+  orders       Order[]
+  cashSessions CashSession[]
+  tableBookings TableBooking[]
+  payments Payment[]
+  fiscalReceipts FiscalReceipt[]
+  notifications Notification[]
+  coupons Coupon[]
+  auditEvents AuditEvent[]
 }
 
 
+
+
+// Append-only change history. Sensitive values must be redacted by callers.
+model AuditEvent {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId    String   @db.ObjectId
+  actorUserId String?  @db.ObjectId
+  action      String
+  entityType  String
+  entityId    String
+  before      Json?
+  after       Json?
+  reason      String?
+  requestId   String?
+  createdAt   DateTime @default(now())
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  actor       User?    @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, entityType, entityId, createdAt])
+}
 
 // Versioned, validated tenant branding configuration.
 // Values are tokens, never arbitrary CSS.
@@ -168,6 +287,7 @@ model Plan {
   key         String       @unique
   name        String
   description String?
+  includedFeatures String[] @default([])
   isActive    Boolean      @default(true)
   prices      PlanPrice[]
   planAddons  PlanAddon[]
@@ -246,6 +366,69 @@ model Subscription {
   @@index([tenantId, status])
   @@index([tenantId, currentPeriodEnd])
   @@index([planId, status])
+}
+
+model Payment {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId      String        @db.ObjectId
+  provider      String
+  status        PaymentStatus @default(pending)
+  amountCents   Int
+  currency      String
+  referenceType String
+  referenceId   String
+  externalId    String?
+  checkoutUrl   String?
+  metadata      Json?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status, createdAt])
+  @@index([provider, externalId])
+  @@index([tenantId, referenceType, referenceId])
+}
+
+model Notification {
+  id            String             @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId      String             @db.ObjectId
+  channel       NotificationChannel
+  status        NotificationStatus @default(queued)
+  recipient     String
+  subject       String?
+  body          String
+  referenceType String?
+  referenceId   String?
+  attempts      Int                @default(0)
+  lastError     String?
+  sentAt        DateTime?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  tenant        Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status, createdAt])
+  @@index([channel, recipient])
+}
+
+model Coupon {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId    String       @db.ObjectId
+  code        String
+  type        DiscountType
+  value       Int
+  maxUses     Int?
+  usedCount   Int          @default(0)
+  expiresAt   DateTime?
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, code])
+  @@index([tenantId, isActive, expiresAt])
 }
 
 model SubscriptionAddon {
@@ -338,7 +521,12 @@ model CatalogItem {
   title       String
   description String?
   priceCents  Int
+  sku         String?
+  stockInitial Float?
+  professionalId String? @db.ObjectId
   category    String?
+  categoryId  String?  @db.ObjectId
+  modifierGroupIds String[] @default([])
   isService   Boolean  @default(false) // true: appointments/services, false: physical product/menu
   durationMin Int?     // Duration in minutes if service
   imageUrl    String?
@@ -348,9 +536,261 @@ model CatalogItem {
   updatedAt    DateTime @updatedAt
 
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  bookings    Booking[]
+  orderLines  OrderLine[]
 
   @@index([tenantId])
   @@index([tenantId, isActive])
+  @@index([tenantId, sku])
+}
+
+model CatalogCategory {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId  String   @db.ObjectId
+  name      String
+  slug      String
+  parentId  String?  @db.ObjectId
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, slug])
+  @@index([tenantId, parentId, isActive])
+}
+
+model CatalogModifierGroup {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId      String   @db.ObjectId
+  name          String
+  minSelections Int      @default(0)
+  maxSelections Int      @default(1)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  options       CatalogModifierOption[]
+
+  @@index([tenantId, isActive])
+}
+
+model CatalogModifierOption {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  groupId        String   @db.ObjectId
+  name           String
+  priceDeltaCents Int     @default(0)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  group          CatalogModifierGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([groupId, isActive])
+}
+
+model Booking {
+  id              String               @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId        String               @db.ObjectId
+  catalogItemId   String               @db.ObjectId
+  customerName    String
+  customerEmail   String?
+  customerPhone   String?
+  customerId      String?              @db.ObjectId
+  date            DateTime
+  startTime       String
+  durationMin     Int
+  status          BookingStatus        @default(requested)
+  paymentStatus   BookingPaymentStatus @default(pending)
+  notes           String?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  tenant          Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  catalogItem     CatalogItem          @relation(fields: [catalogItemId], references: [id], onDelete: Restrict)
+  customer        Customer?            @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, date, status])
+  @@index([catalogItemId, date, status])
+}
+
+model Customer {
+  id           String         @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId     String         @db.ObjectId
+  name         String
+  email        String?
+  phone        String?
+  notes        CustomerNote[]
+  bookings     Booking[]
+  loyaltyAccount LoyaltyAccount?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  tenant       Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, name])
+  @@index([tenantId, email])
+  @@index([tenantId, phone])
+}
+
+model LoyaltyAccount {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId   String   @db.ObjectId
+  customerId String   @unique @db.ObjectId
+  points     Int      @default(0)
+  tier       String   @default("standard")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  @@unique([tenantId, customerId])
+  @@index([tenantId, points])
+}
+
+model CustomerNote {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  customerId String   @db.ObjectId
+  body       String
+  createdAt  DateTime @default(now())
+
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId, createdAt])
+}
+
+model InventoryItem {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId    String   @db.ObjectId
+  name        String
+  sku         String?
+  unit        String   @default("unidad")
+  quantity    Float    @default(0)
+  minimum     Float    @default(0)
+  costCents   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  movements   StockMovement[]
+  @@unique([tenantId, name])
+  @@index([tenantId, quantity])
+}
+
+model StockMovement {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId        String   @db.ObjectId
+  inventoryItemId String   @db.ObjectId
+  quantity        Float
+  reason          String?
+  createdAt       DateTime @default(now())
+  item            InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  @@index([tenantId, createdAt])
+}
+
+model RestaurantTable {
+  id        String               @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId  String               @db.ObjectId
+  number    Int
+  seats     Int                  @default(2)
+  status    RestaurantTableStatus @default(available)
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+  tenant    Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orders    Order[]
+  bookings  TableBooking[]
+  @@unique([tenantId, number])
+}
+
+model TableBooking {
+  id           String             @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId     String             @db.ObjectId
+  tableId      String             @db.ObjectId
+  customerName String
+  customerEmail String?
+  customerPhone String?
+  date         DateTime
+  startTime    String
+  durationMin  Int                @default(120)
+  partySize    Int                @default(2)
+  status       TableBookingStatus @default(requested)
+  notes        String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  tenant       Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  table        RestaurantTable    @relation(fields: [tableId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, date, status])
+  @@index([tableId, date, status])
+}
+
+model Order {
+  id        String      @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId  String      @db.ObjectId
+  tableId   String?     @db.ObjectId
+  status    OrderStatus @default(open)
+  channel   OrderChannel @default(dine_in)
+  deliveryStatus DeliveryStatus?
+  deliveryAddress String?
+  courierName String?
+  courierPhone String?
+  deliveryEta DateTime?
+  paymentStatus BookingPaymentStatus @default(pending)
+  couponCode String?
+  discountCents Int @default(0)
+  customerName String?
+  notes     String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  tenant    Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  table     RestaurantTable? @relation(fields: [tableId], references: [id], onDelete: SetNull)
+  lines     OrderLine[]
+  fiscalReceipt FiscalReceipt?
+  @@index([tenantId, status])
+  @@index([tableId, status])
+}
+
+model FiscalReceipt {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId    String   @db.ObjectId
+  orderId     String   @unique @db.ObjectId
+  provider    String   @default("mock")
+  status      String   @default("issued")
+  receiptType String   @default("internal")
+  number      String
+  totalCents  Int
+  currency    String   @default("ARS")
+  payload     Json?
+  issuedAt    DateTime @default(now())
+  tenant      Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  @@index([tenantId, issuedAt])
+}
+
+model OrderLine {
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  orderId     String      @db.ObjectId
+  catalogItemId String    @db.ObjectId
+  quantity    Int         @default(1)
+  unitPriceCents Int
+  guestName   String?
+  order       Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  catalogItem CatalogItem @relation(fields: [catalogItemId], references: [id], onDelete: Restrict)
+}
+
+model CashSession {
+  id           String            @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId     String            @db.ObjectId
+  status       CashSessionStatus @default(open)
+  openingCents Int
+  closingCents Int?
+  openedAt     DateTime          @default(now())
+  closedAt     DateTime?
+  notes        String?
+  tenant       Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  @@index([tenantId, status])
+  @@index([tenantId, openedAt])
 }
 
 // Global, platform-scoped definition of modules and functions.

@@ -3,6 +3,8 @@ import {
   Get,
   Patch,
   Post,
+  Delete,
+  Param,
   Body,
   UseGuards,
   HttpCode,
@@ -16,6 +18,7 @@ import { RolesGuard } from '../../core/guards/roles.guard.js';
 import { Roles } from '../../core/decorators/roles.decorator.js';
 import { CurrentTenant } from '../../core/decorators/tenant-context.decorator.js';
 import type { TenantContext } from '../../core/interfaces/context.interface.js';
+import { UpdateMemberDto } from './dto/update-member.dto.js';
 
 @Controller('tenant')
 @UseGuards(TenantContextGuard, RolesGuard)
@@ -41,6 +44,16 @@ export class TenantController {
     return this.tenantService.getMembers(tenant.tenantId);
   }
 
+  @Get('billing')
+  async getBilling(@CurrentTenant() tenant: TenantContext) {
+    return this.tenantService.getBilling(tenant.tenantId);
+  }
+
+  @Get('analytics')
+  async getAnalytics(@CurrentTenant() tenant: TenantContext) {
+    return this.tenantService.getAnalytics(tenant.tenantId);
+  }
+
   @Post('members')
   @HttpCode(HttpStatus.CREATED)
   @Roles(Role.OWNER, Role.MANAGER)
@@ -48,7 +61,20 @@ export class TenantController {
     @CurrentTenant() tenant: TenantContext,
     @Body('email') email: string,
     @Body('role') role?: Role,
+    @Body('permissions') permissions?: string[],
   ) {
-    return this.tenantService.addMember(tenant.tenantId, email, role);
+    return this.tenantService.addMember(tenant.tenantId, email, role, permissions);
+  }
+
+  @Patch('members/:userId')
+  @Roles(Role.OWNER)
+  async updateMember(@CurrentTenant() tenant: TenantContext, @Param('userId') userId: string, @Body() dto: UpdateMemberDto) {
+    return this.tenantService.updateMember(tenant.tenantId, userId, dto);
+  }
+
+  @Delete('members/:userId')
+  @Roles(Role.OWNER)
+  async removeMember(@CurrentTenant() tenant: TenantContext, @Param('userId') userId: string) {
+    return this.tenantService.removeMember(tenant.tenantId, userId);
   }
 }

@@ -15,6 +15,16 @@ import { HealthModule } from './health/health.module.js';
 import { ThemeModule } from './tenant/core/theme/theme.module.js';
 import { BootstrapModule } from './bootstrap/bootstrap.module.js';
 import { AccessModule } from './access/access.module.js';
+import { AuditModule } from './audit/audit.module.js';
+import { AppointmentsModule } from './tenant/sections/appointments/appointments.module.js';
+import { InventoryModule } from './tenant/sections/inventory/inventory.module.js';
+import { RestaurantModule } from './tenant/sections/restaurant/restaurant.module.js';
+import { PosModule } from './tenant/sections/pos/pos.module.js';
+import { ClientsModule } from './tenant/sections/clients/clients.module.js';
+import { SubscriptionGuard } from './core/guards/subscription.guard.js';
+import { PaymentsModule } from './payments/payments.module.js';
+import { NotificationsModule } from './notifications/notifications.module.js';
+import { CouponsModule } from './coupons/coupons.module.js';
 
 @Module({
   imports: [
@@ -33,6 +43,15 @@ import { AccessModule } from './access/access.module.js';
     ThemeModule,
     BootstrapModule,
     AccessModule,
+    AuditModule,
+    AppointmentsModule,
+    InventoryModule,
+    RestaurantModule,
+    PosModule,
+    ClientsModule,
+    PaymentsModule,
+    NotificationsModule,
+    CouponsModule,
   ],
   controllers: [AppController],
   providers: [
@@ -40,6 +59,10 @@ import { AccessModule } from './access/access.module.js';
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: SubscriptionGuard,
     },
   ],
 })
