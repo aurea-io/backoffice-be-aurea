@@ -76,6 +76,11 @@ enum OrderStatus {
   canceled
 }
 
+enum CashSessionStatus {
+  open
+  closed
+}
+
 // -----------------------------------------------------------------------------
 // MODELS
 // -----------------------------------------------------------------------------
@@ -122,6 +127,7 @@ model Tenant {
   inventoryItems InventoryItem[]
   restaurantTables RestaurantTable[]
   orders       Order[]
+  cashSessions CashSession[]
   auditEvents AuditEvent[]
 }
 
@@ -505,6 +511,20 @@ model OrderLine {
   guestName   String?
   order       Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
   catalogItem CatalogItem @relation(fields: [catalogItemId], references: [id], onDelete: Restrict)
+}
+
+model CashSession {
+  id           String            @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId     String            @db.ObjectId
+  status       CashSessionStatus @default(open)
+  openingCents Int
+  closingCents Int?
+  openedAt     DateTime          @default(now())
+  closedAt     DateTime?
+  notes        String?
+  tenant       Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  @@index([tenantId, status])
+  @@index([tenantId, openedAt])
 }
 
 // Global, platform-scoped definition of modules and functions.

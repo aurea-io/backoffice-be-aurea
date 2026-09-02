@@ -19,6 +19,7 @@ import { AuditModule } from './audit/audit.module.js';
 import { AppointmentsModule } from './tenant/sections/appointments/appointments.module.js';
 import { InventoryModule } from './tenant/sections/inventory/inventory.module.js';
 import { RestaurantModule } from './tenant/sections/restaurant/restaurant.module.js';
+import { PosModule } from './tenant/sections/pos/pos.module.js';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { RestaurantModule } from './tenant/sections/restaurant/restaurant.module
     AppointmentsModule,
     InventoryModule,
     RestaurantModule,
+    PosModule,
   ],
   controllers: [AppController],
   providers: [
