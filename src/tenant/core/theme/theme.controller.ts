@@ -1,4 +1,4 @@
-import { Controller, Get, Header, Param, Req, Res } from '@nestjs/common';
+import { Controller, Get, Header, Param, Query, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { Public } from '../../../core/decorators/public.decorator.js';
 import { ThemeService } from './theme.service.js';
@@ -12,10 +12,11 @@ export class ThemeController {
   @Header('Content-Type', 'text/css; charset=utf-8')
   async getStyles(
     @Param('publicId') publicId: string,
+    @Query('v') version: string | undefined,
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const result = await this.themeService.renderPublishedCss(publicId);
+    const result = await this.themeService.renderPublishedCss(publicId, version ? Number(version) : undefined);
     response.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
     response.setHeader('ETag', result.etag);
 

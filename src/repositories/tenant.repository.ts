@@ -198,6 +198,31 @@ export class TenantRepository {
     });
   }
 
+  async findMembership(tenantId: string, userId: string) {
+    return this.prisma.tenantUser.findUnique({ where: { tenantId_userId: { tenantId, userId } } });
+  }
+
+  async updateMembership(tenantId: string, userId: string, data: {
+    role?: Role;
+    roleKey?: string | null;
+    permissions?: string[];
+    isActive?: boolean;
+  }) {
+    return this.prisma.tenantUser.update({
+      where: { tenantId_userId: { tenantId, userId } },
+      data,
+      include: { user: { select: { id: true, email: true, name: true, avatarUrl: true } } },
+    });
+  }
+
+  async countActiveOwners(tenantId: string) {
+    return this.prisma.tenantUser.count({ where: { tenantId, role: Role.OWNER, isActive: true } });
+  }
+
+  async removeMembership(tenantId: string, userId: string) {
+    return this.prisma.tenantUser.delete({ where: { tenantId_userId: { tenantId, userId } } });
+  }
+
   async findPlatformMembership(userId: string, roleKey = 'SUPERADMIN') {
     return this.prisma.platformMembership.findFirst({
       where: { userId, roleKey, isActive: true },

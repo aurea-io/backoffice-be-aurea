@@ -130,12 +130,17 @@ export class SuperadminTenantsService {
       throw new BadRequestException('El tenant del sistema no puede ser eliminado.');
     }
 
-    await this.tenantRepo.delete(id);
-    this.logger.log(`Tenant '${tenant.name}' (${tenant.slug}) eliminado definitivamente.`);
+    await this.tenantRepo.update(id, {
+      isActive: false,
+      deprecatedAt: new Date(),
+      maintenanceMode: true,
+      maintenanceMessage: 'Este comercio fue archivado y no acepta nuevas operaciones.',
+    });
+    this.logger.log(`Tenant '${tenant.name}' (${tenant.slug}) archivado.`);
 
     return {
       success: true,
-      message: `Tenant '${tenant.name}' eliminado definitivamente.`,
+      message: `Tenant '${tenant.name}' archivado; sus datos fueron conservados.`,
     };
   }
 

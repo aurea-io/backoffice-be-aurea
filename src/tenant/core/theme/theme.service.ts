@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service.js';
+import { validateBranding } from '../../../branding/branding.validator.js';
 
 const DEFAULT_THEME = {
   primaryColor: '#7c3aed',
@@ -22,7 +23,7 @@ export class ThemeService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async renderPublishedCss(publicId: string): Promise<ThemeResult> {
+  async renderPublishedCss(publicId: string, requestedVersion?: number): Promise<ThemeResult> {
     const key = publicId.trim().toLowerCase();
     const cached = this.cache.get(key);
     if (cached && cached.expiresAt > Date.now()) {
@@ -34,7 +35,7 @@ export class ThemeService {
     const pending = this.inFlight.get(key);
     if (pending) return pending;
 
-    const load = this.loadTheme(key);
+    const load = this.loadTheme(key, requestedVersion);
     this.inFlight.set(key, load);
     try {
       const result = await load;
@@ -44,7 +45,8 @@ export class ThemeService {
     } catch (error) {
       const stale = this.cache.get(key);
       if (stale) return stale;
-      throw error;
+      if (error instanceof NotFoundException) throw error;
+      throw new ServiceUnavailableException('Theme service temporarily unavailable.');
     } finally {
       this.inFlight.delete(key);
     }
@@ -54,8 +56,10 @@ export class ThemeService {
     return { hits: this.hits, misses: this.misses, entries: this.cache.size };
   }
 
-  private async loadTheme(publicId: string): Promise<ThemeResult> {
-    const tenant = await this.prisma.tenant.findUnique({
+  private async loadTheme(publicId: string, requestedVersion?: number): Promise<ThemeResult> {
+    let tenant;
+    try {
+      tenant = await this.prisma.tenant.findUnique({
       where: { slug: publicId },
       include: {
         brandingVersions: {
@@ -64,11 +68,29 @@ export class ThemeService {
           take: 1,
         },
       },
-    });
+      });
+    } catch (error) {
+      throw new ServiceUnavailableException('Theme dependency unavailable.');
+    }
     if (!tenant || !tenant.isActive) throw new NotFoundException('Theme not found.');
 
     const branding = { ...DEFAULT_THEME, ...(tenant.brandingVersions[0] ?? {}) };
+    try {
+      validateBranding({
+        primaryColor: branding.primaryColor,
+        accentColor: branding.accentColor,
+        textColor: branding.textColor,
+        fontFamily: branding.fontFamily,
+        logoUrl: branding.logoUrl,
+        coverUrl: branding.coverUrl,
+      });
+    } catch {
+      throw new NotFoundException('Published theme contains invalid branding tokens.');
+    }
     const version = tenant.brandingVersions[0]?.version ?? 0;
+    if (requestedVersion !== undefined && requestedVersion !== version) {
+      throw new NotFoundException('Requested theme version not found.');
+    }
     return {
       css: [
         ':root {',

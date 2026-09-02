@@ -3,6 +3,8 @@ import {
   Get,
   Patch,
   Post,
+  Delete,
+  Param,
   Body,
   UseGuards,
   HttpCode,
@@ -16,6 +18,7 @@ import { RolesGuard } from '../../core/guards/roles.guard.js';
 import { Roles } from '../../core/decorators/roles.decorator.js';
 import { CurrentTenant } from '../../core/decorators/tenant-context.decorator.js';
 import type { TenantContext } from '../../core/interfaces/context.interface.js';
+import { UpdateMemberDto } from './dto/update-member.dto.js';
 
 @Controller('tenant')
 @UseGuards(TenantContextGuard, RolesGuard)
@@ -50,5 +53,17 @@ export class TenantController {
     @Body('role') role?: Role,
   ) {
     return this.tenantService.addMember(tenant.tenantId, email, role);
+  }
+
+  @Patch('members/:userId')
+  @Roles(Role.OWNER)
+  async updateMember(@CurrentTenant() tenant: TenantContext, @Param('userId') userId: string, @Body() dto: UpdateMemberDto) {
+    return this.tenantService.updateMember(tenant.tenantId, userId, dto);
+  }
+
+  @Delete('members/:userId')
+  @Roles(Role.OWNER)
+  async removeMember(@CurrentTenant() tenant: TenantContext, @Param('userId') userId: string) {
+    return this.tenantService.removeMember(tenant.tenantId, userId);
   }
 }

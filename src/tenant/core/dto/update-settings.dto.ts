@@ -8,6 +8,10 @@ export class UpdateTenantSettingsDto {
   @IsOptional()
   settings?: {
     brandColor?: string;
+    primaryColor?: string;
+    accentColor?: string;
+    textColor?: string;
+    fontFamily?: string;
     logoUrl?: string;
     coverUrl?: string;
     description?: string;
