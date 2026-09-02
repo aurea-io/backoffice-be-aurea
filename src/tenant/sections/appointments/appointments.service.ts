@@ -7,6 +7,7 @@ import { NotificationsService } from '../../../notifications/notifications.servi
 
 const dayStart = (value: string) => new Date(`${value}T00:00:00.000Z`);
 const toMinutes = (value: string) => { const [h, m] = value.split(':').map(Number); return h * 60 + m; };
+const isDate = (value: string) => { if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false; const [year, month, day] = value.split('-').map(Number); const parsed = dayStart(value); return parsed.getUTCFullYear() === year && parsed.getUTCMonth() + 1 === month && parsed.getUTCDate() === day; };
 
 @Injectable()
 export class AppointmentsService {
@@ -20,10 +21,16 @@ export class AppointmentsService {
   }
 
   async availability(publicId: string, date: string, catalogItemId?: string) {
+    if (!isDate(date)) throw new BadRequestException('La fecha debe tener formato YYYY-MM-DD.');
     const tenant = await this.prisma.tenant.findUnique({ where: { slug: publicId.trim().toLowerCase() }, select: { id: true, isActive: true } });
     if (!tenant?.isActive) throw new NotFoundException('Comercio no encontrado.');
-    const bookings = await this.prisma.booking.findMany({ where: { tenantId: tenant.id, date: dayStart(date), status: { not: BookingStatus.canceled }, ...(catalogItemId ? { catalogItemId } : {}) }, select: { startTime: true, durationMin: true } });
-    return { date, booked: bookings, available: bookings.length === 0 };
+    const [bookings, service] = await Promise.all([
+      this.prisma.booking.findMany({ where: { tenantId: tenant.id, date: dayStart(date), status: { not: BookingStatus.canceled }, ...(catalogItemId ? { catalogItemId } : {}) }, select: { startTime: true, durationMin: true } }),
+      catalogItemId ? this.prisma.catalogItem.findFirst({ where: { id: catalogItemId, tenantId: tenant.id, isService: true, isActive: true }, select: { durationMin: true } }) : Promise.resolve(null),
+    ]);
+    const duration = service?.durationMin || 60;
+    const slots = Array.from({ length: 19 }, (_, index) => 9 * 60 + index * 30).filter((start) => start + duration <= 19 * 60 && !bookings.some((booking) => { const bookedStart = toMinutes(booking.startTime); return start < bookedStart + booking.durationMin && start + duration > bookedStart; })).map((start) => `${String(Math.floor(start / 60)).padStart(2, '0')}:${String(start % 60).padStart(2, '0')}`);
+    return { date, durationMin: duration, booked: bookings, slots, available: slots.length > 0 };
   }
 
   async create(tenantId: string, dto: CreateBookingDto) {
