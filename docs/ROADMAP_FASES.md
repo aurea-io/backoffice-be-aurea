@@ -101,15 +101,15 @@ graph TD
 ### 🟠 FASE 5: Punto de Venta (POS / Caja), Pedidos, Cobros y Delivery
 > **Objetivo:** Cobrar, emitir tickets y procesar pedidos multicanal.
 - [x] **Módulo POS / Caja Diaria:** Apertura y cierre de caja, arqueo en efectivo y medios digitales.
-- [x] **Flujo de Comandas & Facturación:** Adición de productos a una mesa/pedido y estados de cobro; división de cuentas y ticket fiscal quedan pendientes.
-- [x] **Módulo de Delivery & Takeaway:** Canales takeaway/delivery y estado de entrega; logística con cadete queda pendiente.
+- [x] **Flujo de Comandas & Facturación:** Adición de productos a una mesa/pedido, estados de cobro y ticket separado por comensal; emisión fiscal homologada queda pendiente de integración con proveedor autorizado.
+- [x] **Módulo de Delivery & Takeaway:** Canales takeaway/delivery, dirección y estados de entrega; asignación de cadete/logística propia queda pendiente de integración operativa.
 - [x] Contrato de intents y webhooks con adaptadores HTTP para Mercado Pago y Stripe; requiere credenciales y validación de firma por ambiente para producción.
 
 ---
 
 ### 🔴 FASE 6: Integración con Portal Público (Aurea Pages Template) & Menú QR
 > **Objetivo:** Conectar el backoffice con la web pública del cliente.
-- [x] Sincronización de catálogo y envío de pedidos desde la plantilla pública; disponibilidad en tiempo real queda pendiente.
+- [x] Sincronización de catálogo y envío de pedidos desde la plantilla pública; actualización en tiempo real queda pendiente de incorporar WebSocket/SSE en despliegue.
 - [x] Generador de Códigos QR para mesas (abre el menú digital interactivo).
 - [x] Pedidos directos desde el celular del comensale / cliente (Self-Ordering).
 - [x] Personalización del Theme y Branding del local desde el Backoffice (colores, logo, tipografía, portada).
@@ -118,6 +118,6 @@ graph TD
 
 ### ⚪ FASE 7: Analytics, Notificaciones Automáticas & Marketing
 > **Objetivo:** Inteligencia de negocio y retención de clientes.
-- [x] Dashboard de Analíticas Avanzadas: productos más vendidos, ticket promedio, facturación acumulada y distribución de pedidos; horas pico y series diarias quedan pendientes.
+- [x] Dashboard de Analíticas Avanzadas: productos más vendidos, ticket promedio, facturación acumulada, distribución de pedidos, horas pico y series diarias.
 - [x] Módulo de Email Transaccional / Notificaciones por WhatsApp: cola persistente, reintentos y confirmación de turnos; requiere credenciales del proveedor.
 - [x] Descuentos, cupones y fidelización: creación, vencimiento, límite de usos, aplicación a pedidos públicos y cuentas de puntos por cliente con acumulación/canje y niveles.
