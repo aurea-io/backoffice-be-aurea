@@ -60,29 +60,37 @@ export class TenantService {
       }
     }
 
-    const updated = await this.tenantRepo.update(tenantId, {
-      name: dto.name ? dto.name.trim() : undefined,
-      settings: updatedSettings,
-    });
-
-    if (branding) {
-      const latest = await this.prisma.tenantBrandingVersion.findFirst({ where: { tenantId }, orderBy: { version: 'desc' } });
-      await this.prisma.tenantBrandingVersion.updateMany({ where: { tenantId, isPublished: true }, data: { isPublished: false } });
-      await this.prisma.tenantBrandingVersion.create({
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.tenant.update({
+        where: { id: tenantId },
         data: {
-          tenantId,
-          version: (latest?.version ?? 0) + 1,
-          primaryColor: branding.primaryColor ?? branding.brandColor ?? '#7c3aed',
-          accentColor: branding.accentColor ?? '#a78bfa',
-          textColor: branding.textColor ?? '#18181b',
-          fontFamily: branding.fontFamily ?? 'sans',
-          logoUrl: branding.logoUrl ?? null,
-          coverUrl: branding.coverUrl ?? null,
-          isPublished: true,
+          name: dto.name ? dto.name.trim() : undefined,
+          settings: updatedSettings,
         },
+        include: { features: true },
       });
-    }
-    return updated;
+
+      if (branding) {
+        const latest = await tx.tenantBrandingVersion.findFirst({ where: { tenantId }, orderBy: { version: 'desc' } });
+        await tx.tenantBrandingVersion.updateMany({ where: { tenantId, isPublished: true }, data: { isPublished: false } });
+        await tx.tenantBrandingVersion.create({
+          data: {
+            tenantId,
+            version: (latest?.version ?? 0) + 1,
+            primaryColor: branding.primaryColor ?? branding.brandColor ?? '#7c3aed',
+            accentColor: branding.accentColor ?? '#a78bfa',
+            textColor: branding.textColor ?? '#18181b',
+            fontFamily: branding.fontFamily ?? 'sans',
+            logoUrl: branding.logoUrl ?? null,
+            coverUrl: branding.coverUrl ?? null,
+            layoutTokens: branding.layoutTokens ?? null,
+            overrides: branding.overrides ?? null,
+            isPublished: true,
+          },
+        });
+      }
+      return updated;
+    });
   }
 
   async getBrandingVersions(tenantId: string) {
@@ -93,20 +101,24 @@ export class TenantService {
     if (!Number.isInteger(version) || version < 1) throw new BadRequestException('Versión de branding inválida.');
     const target = await this.prisma.tenantBrandingVersion.findFirst({ where: { tenantId, version } });
     if (!target) throw new NotFoundException('Versión de branding no encontrada.');
-    await this.prisma.tenantBrandingVersion.updateMany({ where: { tenantId, isPublished: true }, data: { isPublished: false } });
-    const latest = await this.prisma.tenantBrandingVersion.findFirst({ where: { tenantId }, orderBy: { version: 'desc' } });
-    return this.prisma.tenantBrandingVersion.create({
-      data: {
-        tenantId,
-        version: (latest?.version ?? 0) + 1,
-        primaryColor: target.primaryColor,
-        accentColor: target.accentColor,
-        textColor: target.textColor,
-        fontFamily: target.fontFamily,
-        logoUrl: target.logoUrl,
-        coverUrl: target.coverUrl,
-        isPublished: true,
-      },
+    return this.prisma.$transaction(async (tx) => {
+      await tx.tenantBrandingVersion.updateMany({ where: { tenantId, isPublished: true }, data: { isPublished: false } });
+      const latest = await tx.tenantBrandingVersion.findFirst({ where: { tenantId }, orderBy: { version: 'desc' } });
+      return tx.tenantBrandingVersion.create({
+        data: {
+          tenantId,
+          version: (latest?.version ?? 0) + 1,
+          primaryColor: target.primaryColor,
+          accentColor: target.accentColor,
+          textColor: target.textColor,
+          fontFamily: target.fontFamily,
+          logoUrl: target.logoUrl,
+          coverUrl: target.coverUrl,
+          layoutTokens: target.layoutTokens ?? null,
+          overrides: target.overrides ?? null,
+          isPublished: true,
+        },
+      });
     });
   }
 
