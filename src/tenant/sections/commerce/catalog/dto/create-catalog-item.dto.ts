@@ -24,6 +24,13 @@ export class CreateCatalogItemDto {
   @IsOptional()
   category?: string;
 
+  @IsString()
+  @IsOptional()
+  categoryId?: string;
+
+  @IsOptional()
+  modifierGroupIds?: string[];
+
   @IsBoolean()
   @IsOptional()
   isService?: boolean;

@@ -36,6 +36,8 @@ export class CatalogRepository {
     description?: string;
     priceCents: number;
     category?: string;
+    categoryId?: string;
+    modifierGroupIds?: string[];
     isService?: boolean;
     durationMin?: number;
     imageUrl?: string;
@@ -49,6 +51,8 @@ export class CatalogRepository {
         description: data.description?.trim(),
         priceCents: data.priceCents,
         category: data.category?.trim(),
+        categoryId: data.categoryId,
+        modifierGroupIds: data.modifierGroupIds ?? [],
         isService: data.isService ?? false,
         durationMin: data.durationMin,
         imageUrl: data.imageUrl,
@@ -65,6 +69,8 @@ export class CatalogRepository {
       description: string;
       priceCents: number;
       category: string;
+      categoryId: string;
+      modifierGroupIds: string[];
       isService: boolean;
       durationMin: number;
       imageUrl: string;

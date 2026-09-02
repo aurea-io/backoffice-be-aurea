@@ -69,11 +69,11 @@ graph TD
 ### 🔵 FASE 3: Catálogo Universal, Categorías, Modificadores & Variantes
 > **Objetivo:** Permitir a cualquier tipo de comercio cargar sus productos o servicios.
 - [x] Catálogo base de productos y servicios con precio, duración, imagen y metadatos.
-- [ ] CRUD de Categorías y Subcategorías jerárquicas.
+- [x] CRUD de Categorías y Subcategorías jerárquicas.
 - [ ] Modelo de Items de Catálogo enriquecido:
   - Modo Producto Físico (artículos, precios, costo, SKU, stock inicial).
   - Modo Servicio / Turno (duración en minutos, precio, profesional asignado).
-- [ ] Grupos de Opciones / Modificadores (ej: puntos de cocción, agregados, salsas, talles, colores).
+- [x] Grupos de Opciones / Modificadores (ej: puntos de cocción, agregados, salsas, talles, colores).
 - [ ] Carga masiva / Importación de productos vía CSV / Excel.
 - [ ] Carga y optimización de imágenes multimedia por producto.
 
@@ -109,7 +109,7 @@ graph TD
 
 ### 🔴 FASE 6: Integración con Portal Público (Aurea Pages Template) & Menú QR
 > **Objetivo:** Conectar el backoffice con la web pública del cliente.
-- [ ] Sincronización automática de catálogo y disponibilidad en tiempo real con la plantilla pública (`aurea-pages-template`).
+- [x] Sincronización de catálogo y envío de pedidos desde la plantilla pública; disponibilidad en tiempo real queda pendiente.
 - [ ] Generador de Códigos QR para mesas (abre el menú digital interactivo).
 - [ ] Pedidos directos desde el celular del comensale / cliente (Self-Ordering).
 - [ ] Personalización del Theme y Branding del local desde el Backoffice (colores, logo, tipografía, portada).

@@ -17,5 +17,20 @@ export class RestaurantService {
     const prices = new Map(catalog.map((item) => [item.id, item.priceCents]));
     return this.prisma.order.create({ data: { tenantId, tableId: dto.tableId, customerName: dto.customerName?.trim(), notes: dto.notes?.trim(), channel: dto.channel, deliveryAddress: dto.deliveryAddress?.trim(), deliveryStatus: dto.channel === 'delivery' ? 'pending' : undefined, lines: { create: dto.lines.map((line) => ({ catalogItemId: line.catalogItemId, quantity: line.quantity, guestName: line.guestName?.trim(), unitPriceCents: prices.get(line.catalogItemId)! })) } }, include: { table: true, lines: { include: { catalogItem: true } } } });
   }
+  async createPublicOrder(publicId: string, dto: CreateOrderDto) {
+    const tenant = await this.prisma.tenant.findUnique({ where: { slug: publicId.trim().toLowerCase() }, select: { id: true, isActive: true } });
+    if (!tenant || !tenant.isActive) throw new NotFoundException('Comercio público no disponible.');
+    const feature = await this.prisma.tenantFeature.findUnique({ where: { tenantId_featureKey: { tenantId: tenant.id, featureKey: 'orders' } } });
+    if (feature && !feature.isEnabled) throw new BadRequestException('Los pedidos públicos no están habilitados.');
+    let tableId = dto.tableId;
+    if (tableId) {
+      const table = /^[a-f0-9]{24}$/i.test(tableId)
+        ? await this.prisma.restaurantTable.findFirst({ where: { tenantId: tenant.id, id: tableId }, select: { id: true } })
+        : await this.prisma.restaurantTable.findFirst({ where: { tenantId: tenant.id, number: Number(tableId) || -1 }, select: { id: true } });
+      if (!table) throw new BadRequestException('La mesa no pertenece al comercio.');
+      tableId = table.id;
+    }
+    return this.createOrder(tenant.id, { ...dto, tableId });
+  }
   async updateOrder(tenantId: string, id: string, dto: UpdateOrderDto) { const order = await this.prisma.order.findFirst({ where: { id, tenantId } }); if (!order) throw new NotFoundException('Pedido no encontrado.'); return this.prisma.order.update({ where: { id }, data: dto, include: { lines: true } }); }
 }

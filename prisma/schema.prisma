@@ -136,6 +136,8 @@ model Tenant {
   subscriptions Subscription[]
   creditLedger CreditLedger[]
   catalogItems CatalogItem[]
+  catalogCategories CatalogCategory[]
+  catalogModifierGroups CatalogModifierGroup[]
   brandingVersions TenantBrandingVersion[]
   bookings     Booking[]
   inventoryItems InventoryItem[]
@@ -419,6 +421,8 @@ model CatalogItem {
   description String?
   priceCents  Int
   category    String?
+  categoryId  String?  @db.ObjectId
+  modifierGroupIds String[] @default([])
   isService   Boolean  @default(false) // true: appointments/services, false: physical product/menu
   durationMin Int?     // Duration in minutes if service
   imageUrl    String?
@@ -433,6 +437,52 @@ model CatalogItem {
 
   @@index([tenantId])
   @@index([tenantId, isActive])
+}
+
+model CatalogCategory {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId  String   @db.ObjectId
+  name      String
+  slug      String
+  parentId  String?  @db.ObjectId
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, slug])
+  @@index([tenantId, parentId, isActive])
+}
+
+model CatalogModifierGroup {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId      String   @db.ObjectId
+  name          String
+  minSelections Int      @default(0)
+  maxSelections Int      @default(1)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  options       CatalogModifierOption[]
+
+  @@index([tenantId, isActive])
+}
+
+model CatalogModifierOption {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  groupId        String   @db.ObjectId
+  name           String
+  priceDeltaCents Int     @default(0)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  group          CatalogModifierGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([groupId, isActive])
 }
 
 model Booking {
