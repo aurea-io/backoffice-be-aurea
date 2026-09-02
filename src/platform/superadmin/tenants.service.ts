@@ -81,14 +81,27 @@ export class SuperadminTenantsService {
         ? data.features.map((f) => f.toLowerCase().trim())
         : (VERTICAL_DEFAULT_PACKAGES[vertical] || [...SystemConstants.DEFAULT_BASE_FEATURES]);
 
-    // 2. Create tenant
-    const tenant = await this.tenantRepo.create({
-      name: data.name,
-      slug,
-      vertical,
-      settings: data.settings,
-      ownerId: existingUser ? existingUser.id : undefined,
-      defaultFeatures: features,
+    // 2. Create tenant and its audit event atomically. Invitation delivery is
+    // intentionally performed after this transaction commits.
+    const tenant = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.tenant.create({
+        data: {
+          name: data.name.trim(),
+          slug,
+          vertical,
+          settings: data.settings ?? {},
+          memberships: existingUser
+            ? { create: { userId: existingUser.id, role: Role.OWNER, permissions: [RoleConstants.ALL_PERMISSIONS] } }
+            : undefined,
+          features: { createMany: { data: features.map((featureKey) => ({ featureKey, isEnabled: true })) } },
+        },
+        include: {
+          features: true,
+          memberships: { include: { user: { select: { id: true, email: true, name: true } } } },
+        },
+      });
+      await this.auditService.record({ tenantId: created.id, actorUserId, action: 'tenant.created', entityType: 'Tenant', entityId: created.id, after: { name: created.name, slug: created.slug, vertical: created.vertical } }, tx);
+      return created;
     });
 
     // 3. If owner doesn't exist yet, generate exclusive invitation code with role OWNER
@@ -103,8 +116,6 @@ export class SuperadminTenantsService {
         `Generated OWNER invitation code for new tenant ${tenant.name}: ${invitation.code} (sent to ${ownerEmail})`,
       );
     }
-    await this.auditService.record({ tenantId: tenant.id, actorUserId, action: 'tenant.created', entityType: 'Tenant', entityId: tenant.id, after: { name: tenant.name, slug: tenant.slug, vertical: tenant.vertical } });
-
     this.logger.log(
       `New tenant created: ${tenant.slug} (${tenant.name}) - Owner: ${ownerEmail} (${
         existingUser ? 'existing user' : 'invitation generated: ' + invitation?.code
