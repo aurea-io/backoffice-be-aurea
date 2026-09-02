@@ -1,4 +1,4 @@
-import { PrismaClient, Role } from '@prisma/client';
+import { PrismaClient, Role, SubscriptionStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -37,6 +37,18 @@ async function main() {
       settings: { branding: { primaryColor: '#7c3aed', tagline: 'Estudio de Belleza & Turnos' } },
     },
   });
+
+  const plan = await prisma.plan.upsert({
+    where: { key: 'qa-backoffice' },
+    update: { name: 'QA Backoffice', isActive: true },
+    create: { key: 'qa-backoffice', name: 'QA Backoffice', description: 'Plan de pruebas del backoffice', isActive: true },
+  });
+  const subscription = await prisma.subscription.findFirst({ where: { tenantId: tenant.id } });
+  if (subscription) {
+    await prisma.subscription.update({ where: { id: subscription.id }, data: { planId: plan.id, status: SubscriptionStatus.active } });
+  } else {
+    await prisma.subscription.create({ data: { tenantId: tenant.id, planId: plan.id, status: SubscriptionStatus.active } });
+  }
 
   for (const featureKey of ['catalog', 'bookings', 'social_hub']) {
     await prisma.tenantFeature.upsert({

@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { PrismaClient, Role } from '@prisma/client';
+import { PrismaClient, Role, SubscriptionStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -18,12 +18,19 @@ async function main() {
     await prisma.roleDefinition.upsert({ where: { key: role.key }, update: role, create: role });
   }
 
+  const plan = await prisma.plan.upsert({
+    where: { key: 'demo-backoffice' },
+    update: { name: 'Demo Backoffice', isActive: true },
+    create: { key: 'demo-backoffice', name: 'Demo Backoffice', description: 'Plan inicial para el entorno demo', isActive: true },
+  });
+
   const email = process.env.AUREA_ADMIN_EMAIL;
   const password = process.env.AUREA_ADMIN_PASSWORD;
   const name = process.env.AUREA_ADMIN_NAME || 'Superadmin Aurea';
   if (!email || !password) {
     throw new Error('AUREA_ADMIN_EMAIL and AUREA_ADMIN_PASSWORD are required for the seed.');
   }
+
   const saltRounds = 10;
 
   const passwordHash = await bcrypt.hash(password, saltRounds);
@@ -104,6 +111,13 @@ async function main() {
         },
       },
     });
+  }
+
+  const demoSubscription = await prisma.subscription.findFirst({ where: { tenantId: demoTenant.id } });
+  if (demoSubscription) {
+    await prisma.subscription.update({ where: { id: demoSubscription.id }, data: { planId: plan.id, status: SubscriptionStatus.active } });
+  } else {
+    await prisma.subscription.create({ data: { tenantId: demoTenant.id, planId: plan.id, status: SubscriptionStatus.active } });
   }
 
   // Assign admin as OWNER of demo tenant
