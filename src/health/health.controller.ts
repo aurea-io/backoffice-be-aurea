@@ -9,7 +9,12 @@ export class HealthController {
   @Public()
   @Get('live')
   live() {
-    return { status: 'ok', check: 'liveness', timestamp: new Date().toISOString() };
+    return {
+      status: 'ok',
+      check: 'liveness',
+      commit: process.env.AUREA_COMMIT_ID ?? 'unknown',
+      timestamp: new Date().toISOString(),
+    };
   }
 
   @Public()
