@@ -4,12 +4,14 @@ import { TenantRepository, UserRepository } from '../../repositories/index.js';
 import type { UpdateTenantSettingsDto } from './dto/update-settings.dto.js';
 import type { UpdateMemberDto } from './dto/update-member.dto.js';
 import { validateBranding } from '../../branding/branding.validator.js';
+import { PrismaService } from '../../prisma/prisma.service.js';
 
 @Injectable()
 export class TenantService {
   constructor(
     private readonly tenantRepo: TenantRepository,
     private readonly userRepo: UserRepository,
+    private readonly prisma: PrismaService,
   ) {}
 
   async getTenantContext(tenantId: string) {
@@ -65,6 +67,14 @@ export class TenantService {
 
   async getMembers(tenantId: string) {
     return this.tenantRepo.findMembershipsByTenantId(tenantId);
+  }
+
+  async getBilling(tenantId: string) {
+    const subscription = await this.prisma.subscription.findFirst({
+      where: { tenantId }, orderBy: { createdAt: 'desc' },
+      include: { plan: { include: { prices: { where: { isActive: true } } } }, addons: { include: { addon: true } } },
+    });
+    return subscription ?? { status: 'unconfigured', plan: null, addons: [] };
   }
 
   async addMember(tenantId: string, email: string, role: Role = Role.STAFF) {
