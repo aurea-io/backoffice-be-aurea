@@ -32,6 +32,7 @@ async function bootstrap() {
   app.enableCors({
     origin: [
       frontendUrl,
+      'https://backoffice-fe-aurea.vercel.app',
       'http://localhost:5174',
       'http://localhost:5173',
       'http://localhost:3000',
