@@ -77,7 +77,7 @@ export class TenantService {
     return subscription ?? { status: 'unconfigured', plan: null, addons: [] };
   }
 
-  async addMember(tenantId: string, email: string, role: Role = Role.STAFF) {
+  async addMember(tenantId: string, email: string, role: Role = Role.STAFF, permissions?: string[]) {
     const targetEmail = email.toLowerCase().trim();
     const user = await this.userRepo.findByEmail(targetEmail);
 
@@ -87,7 +87,7 @@ export class TenantService {
       );
     }
 
-    return this.tenantRepo.upsertMembership(tenantId, user.id, role);
+    return this.tenantRepo.upsertMembership(tenantId, user.id, role, permissions ?? []);
   }
 
   async updateMember(tenantId: string, userId: string, dto: UpdateMemberDto) {

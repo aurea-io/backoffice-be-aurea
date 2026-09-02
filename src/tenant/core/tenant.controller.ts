@@ -56,8 +56,9 @@ export class TenantController {
     @CurrentTenant() tenant: TenantContext,
     @Body('email') email: string,
     @Body('role') role?: Role,
+    @Body('permissions') permissions?: string[],
   ) {
-    return this.tenantService.addMember(tenant.tenantId, email, role);
+    return this.tenantService.addMember(tenant.tenantId, email, role, permissions);
   }
 
   @Patch('members/:userId')
