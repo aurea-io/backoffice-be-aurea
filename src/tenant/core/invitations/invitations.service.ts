@@ -6,7 +6,7 @@ import {
   ForbiddenException,
   Logger,
 } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service.js';
+import { PrismaService } from '../../../prisma/prisma.service.js';
 import { CreateInvitationDto } from './dto/create-invitation.dto.js';
 import { Role } from '@prisma/client';
 

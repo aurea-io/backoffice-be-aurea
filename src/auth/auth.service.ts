@@ -15,7 +15,7 @@ import {
   AuthTokenRepository,
   TenantRepository,
 } from '../repositories/index.js';
-import { InvitationsService } from '../invitations/invitations.service.js';
+import { InvitationsService } from '../tenant/core/invitations/invitations.service.js';
 import {
   AuthConstants,
   SystemConstants,

@@ -6,7 +6,7 @@ import { AuthService } from './auth.service.js';
 import { AuthController } from './auth.controller.js';
 import { JwtStrategy } from './strategies/jwt.strategy.js';
 import { GoogleStrategy } from './strategies/google.strategy.js';
-import { InvitationsModule } from '../invitations/invitations.module.js';
+import { InvitationsModule } from '../tenant/core/invitations/invitations.module.js';
 import { SystemConstants, AuthConstants } from '../core/constants/index.js';
 import { PrismaModule } from '../prisma/prisma.module.js';
 

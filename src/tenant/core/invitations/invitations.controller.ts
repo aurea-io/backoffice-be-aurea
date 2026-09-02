@@ -11,8 +11,8 @@ import {
 } from '@nestjs/common';
 import { InvitationsService } from './invitations.service.js';
 import { CreateInvitationDto } from './dto/create-invitation.dto.js';
-import { CurrentUser } from '../core/decorators/current-user.decorator.js';
-import type { JwtPayload } from '../core/interfaces/context.interface.js';
+import { CurrentUser } from '../../../core/decorators/current-user.decorator.js';
+import type { JwtPayload } from '../../../core/interfaces/context.interface.js';
 
 @Controller('invitations')
 export class InvitationsController {

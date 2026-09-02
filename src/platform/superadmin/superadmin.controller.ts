@@ -20,8 +20,8 @@ import {
   BatchFeaturesDto,
   GrantSuperAdminDto,
 } from './dto/index.js';
-import { Roles } from '../core/decorators/roles.decorator.js';
-import { RolesGuard } from '../core/guards/roles.guard.js';
+import { Roles } from '../../core/decorators/roles.decorator.js';
+import { RolesGuard } from '../../core/guards/roles.guard.js';
 
 @Controller('superadmin')
 @UseGuards(RolesGuard)

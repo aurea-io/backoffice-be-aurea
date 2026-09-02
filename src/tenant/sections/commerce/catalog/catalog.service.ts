@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CatalogRepository } from '../repositories/index.js';
+import { CatalogRepository } from '../../../../repositories/index.js';
 import type { CreateCatalogItemDto, UpdateCatalogItemDto } from './dto/index.js';
 
 @Injectable()

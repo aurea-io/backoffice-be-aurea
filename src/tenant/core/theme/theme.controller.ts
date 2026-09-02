@@ -1,6 +1,6 @@
 import { Controller, Get, Header, Param, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { Public } from '../core/decorators/public.decorator.js';
+import { Public } from '../../../core/decorators/public.decorator.js';
 import { ThemeService } from './theme.service.js';
 
 @Controller('style')

@@ -11,11 +11,11 @@ import {
 import { Role } from '@prisma/client';
 import { TenantService } from './tenant.service.js';
 import { UpdateTenantSettingsDto } from './dto/update-settings.dto.js';
-import { TenantContextGuard } from '../core/guards/tenant.guard.js';
-import { RolesGuard } from '../core/guards/roles.guard.js';
-import { Roles } from '../core/decorators/roles.decorator.js';
-import { CurrentTenant } from '../core/decorators/tenant-context.decorator.js';
-import type { TenantContext } from '../core/interfaces/context.interface.js';
+import { TenantContextGuard } from '../../core/guards/tenant.guard.js';
+import { RolesGuard } from '../../core/guards/roles.guard.js';
+import { Roles } from '../../core/decorators/roles.decorator.js';
+import { CurrentTenant } from '../../core/decorators/tenant-context.decorator.js';
+import type { TenantContext } from '../../core/interfaces/context.interface.js';
 
 @Controller('tenant')
 @UseGuards(TenantContextGuard, RolesGuard)

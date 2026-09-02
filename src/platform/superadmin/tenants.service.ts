@@ -6,9 +6,9 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
-import { TenantRepository, UserRepository } from '../repositories/index.js';
-import { InvitationsService } from '../invitations/invitations.service.js';
-import { SystemConstants, RoleConstants } from '../core/constants/index.js';
+import { TenantRepository, UserRepository } from '../../repositories/index.js';
+import { InvitationsService } from '../../tenant/core/invitations/invitations.service.js';
+import { SystemConstants, RoleConstants } from '../../core/constants/index.js';
 import type {
   CreateTenantDto,
   UpdateTenantDto,

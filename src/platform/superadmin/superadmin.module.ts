@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { SuperadminController } from './superadmin.controller.js';
 import { SuperadminTenantsService } from './tenants.service.js';
-import { InvitationsModule } from '../invitations/invitations.module.js';
+import { InvitationsModule } from '../../tenant/core/invitations/invitations.module.js';
 
 @Module({
   imports: [InvitationsModule],
@@ -10,4 +10,3 @@ import { InvitationsModule } from '../invitations/invitations.module.js';
   exports: [SuperadminTenantsService],
 })
 export class SuperadminModule {}
-
