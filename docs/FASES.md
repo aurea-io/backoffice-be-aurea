@@ -60,7 +60,7 @@ Los comercios pagan un abono recurrente (mensual/anual). Cada plan empaqueta un 
   - **Catálogo de Módulos Globales:** Registro maestro de features disponibles en el ecosistema (`catalog`, `tables`, `kitchen_display`, `appointments`, `pos_cashier`, `inventory`, `delivery`, `analytics`, etc.).
 - [x] **Asignación de Plan al Crear/Editar Tenant:**
   - Al dar de alta o editar un comercio desde Superadmin, se selecciona su Plan base y se activan en lote todas las `TenantFeature` incluidas, permitiendo añadir add-ons adicionales si el cliente contrató módulos extra.
-- [ ] **Guard de Estado de Suscripción (`SubscriptionGuard`):**
+- [x] **Guard de Estado de Suscripción (`SubscriptionGuard`):**
   - Si el abono mensual está vencido (`PAST_DUE` o `CANCELED`), se muestra un banner de pago pendiente o se restringe la operativa al modo solo lectura.
 - [x] **Pantalla de Mi Suscripción / Plan para el Dueño (`/settings/billing`):**
   - Vista donde el cliente ve:

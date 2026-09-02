@@ -21,6 +21,7 @@ import { InventoryModule } from './tenant/sections/inventory/inventory.module.js
 import { RestaurantModule } from './tenant/sections/restaurant/restaurant.module.js';
 import { PosModule } from './tenant/sections/pos/pos.module.js';
 import { ClientsModule } from './tenant/sections/clients/clients.module.js';
+import { SubscriptionGuard } from './core/guards/subscription.guard.js';
 
 @Module({
   imports: [
@@ -52,6 +53,10 @@ import { ClientsModule } from './tenant/sections/clients/clients.module.js';
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: SubscriptionGuard,
     },
   ],
 })

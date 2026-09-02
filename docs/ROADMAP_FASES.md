@@ -111,8 +111,8 @@ graph TD
 > **Objetivo:** Conectar el backoffice con la web pública del cliente.
 - [x] Sincronización de catálogo y envío de pedidos desde la plantilla pública; disponibilidad en tiempo real queda pendiente.
 - [x] Generador de Códigos QR para mesas (abre el menú digital interactivo).
-- [ ] Pedidos directos desde el celular del comensale / cliente (Self-Ordering).
-- [ ] Personalización del Theme y Branding del local desde el Backoffice (colores, logo, tipografía, portada).
+- [x] Pedidos directos desde el celular del comensale / cliente (Self-Ordering).
+- [x] Personalización del Theme y Branding del local desde el Backoffice (colores, logo, tipografía, portada).
 
 ---
 
