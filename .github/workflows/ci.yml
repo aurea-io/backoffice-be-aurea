@@ -5,8 +5,9 @@ on:
     branches: [main]
 permissions:
   contents: read
+  security-events: write
 jobs:
   ci:
-    uses: aurea-io/aurea-ci/.github/workflows/ci.yml@122aac0b463dd46badc94c0f86407a434a546a59
+    uses: aurea-io/aurea-ci/.github/workflows/ci.yml@main
     with:
       project-type: node-backend

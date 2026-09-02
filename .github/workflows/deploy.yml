@@ -130,7 +130,7 @@ jobs:
     name: Notify image
     if: ${{ always() && needs.verify.result != 'skipped' }}
     needs: [verify, publish]
-    uses: aurea-io/aurea-ci/.github/workflows/notify.yml@59581084818b00f96f71dbc06bbad7a312ddf214
+    uses: aurea-io/aurea-ci/.github/workflows/notify.yml@main
     with:
       event-type: image
       environment: production
@@ -150,7 +150,7 @@ jobs:
     name: Notify deploy
     if: ${{ always() && needs.deploy.result != 'skipped' }}
     needs: [publish, deploy, smoke-test, notify-image]
-    uses: aurea-io/aurea-ci/.github/workflows/notify.yml@59581084818b00f96f71dbc06bbad7a312ddf214
+    uses: aurea-io/aurea-ci/.github/workflows/notify.yml@main
     with:
       event-type: deploy
       environment: production
