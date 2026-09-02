@@ -1,5 +1,7 @@
 name: Release # Contract tracked by backoffice issue #65
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: write

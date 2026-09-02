@@ -130,7 +130,7 @@ jobs:
       event-type: image
       environment: production
       image: ghcr.io/aurea-io/backoffice-be-aurea
-      version: sha-${{ needs.publish.outputs.revision }}
+      version: ${{ github.event.release.tag_name || format('manual-{0}', github.run_number) }}
       source-commit: ${{ needs.publish.outputs.revision }}
       commit-message: ${{ github.event.release.name || github.event.release.tag_name || github.event.head_commit.message || 'workflow dispatch' }}
       status: ${{ needs.publish.result == 'success' && needs.verify.result == 'success' && 'success' || 'failure' }}
@@ -149,7 +149,7 @@ jobs:
     with:
       event-type: deploy
       environment: production
-      version: sha-${{ needs.publish.outputs.revision }}
+      version: ${{ github.event.release.tag_name || format('manual-{0}', github.run_number) }}
       source-commit: ${{ needs.publish.outputs.revision }}
       commit-message: ${{ github.event.release.name || github.event.release.tag_name || github.event.head_commit.message || 'workflow dispatch' }}
       status: ${{ needs.deploy.outputs.configured == 'false' && 'skipped' || needs.smoke-test.result == 'success' && 'success' || 'failure' }}
