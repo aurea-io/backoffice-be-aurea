@@ -68,6 +68,7 @@ graph TD
 
 ### 🔵 FASE 3: Catálogo Universal, Categorías, Modificadores & Variantes
 > **Objetivo:** Permitir a cualquier tipo de comercio cargar sus productos o servicios.
+- [x] Catálogo base de productos y servicios con precio, duración, imagen y metadatos.
 - [ ] CRUD de Categorías y Subcategorías jerárquicas.
 - [ ] Modelo de Items de Catálogo enriquecido:
   - Modo Producto Físico (artículos, precios, costo, SKU, stock inicial).
@@ -82,17 +83,18 @@ graph TD
 > **Objetivo:** Dotar a cada rubro de su herramienta de trabajo diaria.
 
 #### Vertical Gastronómica:
-- [ ] **Gestión de Salón & Mesas (`tables`):** Mapa interactivo de mesas, estados (Libre, Ocupada, Reservada, Por cobrar).
+- [x] **Gestión de Salón & Mesas (`tables`):** Modelo, API de estados y pantalla operativa inicial.
+- [x] **Pedidos base:** Modelo de pedidos/líneas, validación de catálogo y estados de preparación.
 - [ ] **Comandera / KDS Pantalla de Cocina (`kitchen`):** Vista en tiempo real para cocineros con tiempos de preparación y despacho.
 - [ ] **Reservas de Mesa (`bookings`):** Agenda de comensales y confirmaciones.
 
 #### Vertical Belleza / Salud / Servicios:
-- [ ] **Agenda de Turnos & Citas (`appointments`):** Calendario por profesional/box, confirmación y recordatorios.
+- [x] **Agenda de Turnos & Citas (`appointments`):** Reservas persistentes, disponibilidad, solapamientos y confirmación/cancelación.
 - [ ] **Ficha de Clientes / Historial (`clients`):** Registro de tratamientos y notas de atención.
 
 #### Vertical Pastelería / Retail / Stock:
-- [ ] **Control de Stock & Materias Primas (`inventory`):** Descuento automático por receta o venta de producto.
-- [ ] **Alertas de Stock Mínimo.**
+- [x] **Control de Stock base (`inventory`):** Artículos, ajustes y movimientos persistentes.
+- [x] **Alertas de Stock Mínimo** en la vista de inventario.
 
 ---
 

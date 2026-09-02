@@ -121,8 +121,8 @@ Los comercios pagan un abono recurrente (mensual/anual). Cada plan empaqueta un 
 - [ ] **Navegación Dinámica en Frontend (Data-Driven Sidebar):**
   - Configurar `NAV_ITEMS` declarativos para que el menú lateral se filtre automáticamente mostrando solo los módulos y submódulos para los que el empleado tiene permisos.
 - [ ] **Acciones de Gestión de Empleados:**
-  - Modificar rol/permisos de un empleado existente sin tener que re-invitarlo.
-  - Activar / Suspender acceso de un empleado (`TenantUser.isActive`).
-  - Remover empleado del comercio.
+  - [x] Modificar rol/permisos de un empleado existente sin tener que re-invitarlo.
+  - [x] Activar / Suspender acceso de un empleado (`TenantUser.isActive`).
+  - [x] Remover empleado del comercio con protección del último OWNER.
 - [ ] **Conexión de Rutas en `App.tsx` y `Sidebar.tsx`:**
   - Habilitar los accesos de `/members` e `/invitations` en la barra de navegación del Backoffice para los roles con permisos de administración.
