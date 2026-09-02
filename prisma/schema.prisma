@@ -179,6 +179,7 @@ model Tenant {
   cashSessions CashSession[]
   tableBookings TableBooking[]
   payments Payment[]
+  fiscalReceipts FiscalReceipt[]
   notifications Notification[]
   coupons Coupon[]
   auditEvents AuditEvent[]
@@ -742,8 +743,26 @@ model Order {
   tenant    Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   table     RestaurantTable? @relation(fields: [tableId], references: [id], onDelete: SetNull)
   lines     OrderLine[]
+  fiscalReceipt FiscalReceipt?
   @@index([tenantId, status])
   @@index([tableId, status])
+}
+
+model FiscalReceipt {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId    String   @db.ObjectId
+  orderId     String   @unique @db.ObjectId
+  provider    String   @default("mock")
+  status      String   @default("issued")
+  receiptType String   @default("internal")
+  number      String
+  totalCents  Int
+  currency    String   @default("ARS")
+  payload     Json?
+  issuedAt    DateTime @default(now())
+  tenant      Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  @@index([tenantId, issuedAt])
 }
 
 model OrderLine {
