@@ -81,6 +81,20 @@ enum CashSessionStatus {
   closed
 }
 
+enum OrderChannel {
+  dine_in
+  takeaway
+  delivery
+}
+
+enum DeliveryStatus {
+  pending
+  preparing
+  dispatched
+  delivered
+  canceled
+}
+
 // -----------------------------------------------------------------------------
 // MODELS
 // -----------------------------------------------------------------------------
@@ -491,6 +505,10 @@ model Order {
   tenantId  String      @db.ObjectId
   tableId   String?     @db.ObjectId
   status    OrderStatus @default(open)
+  channel   OrderChannel @default(dine_in)
+  deliveryStatus DeliveryStatus?
+  deliveryAddress String?
+  paymentStatus BookingPaymentStatus @default(pending)
   customerName String?
   notes     String?
   createdAt DateTime    @default(now())
