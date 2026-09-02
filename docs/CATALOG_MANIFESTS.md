@@ -1,7 +1,9 @@
 # Manifiestos de módulos
 
-Cada dominio declara su módulo en `src/catalog/manifests` (o en la carpeta del
-dominio cuando este crezca) mediante `defineCatalogManifest`. El registro combina
+Cada dominio declara su módulo en `src/tenant/sections/<section>/<page>/manifests`
+(o en la carpeta del dominio cuando este crezca) mediante
+`defineCatalogManifest`. En el backoffice actual, el catálogo vive en
+`src/tenant/sections/commerce/catalog/manifests`. El registro combina
 los manifiestos con `buildCatalogContract`, que vuelve a validar el snapshot
 completo antes de exponerlo o sincronizarlo con MongoDB.
 
