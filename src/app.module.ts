@@ -16,6 +16,7 @@ import { ThemeModule } from './tenant/core/theme/theme.module.js';
 import { BootstrapModule } from './bootstrap/bootstrap.module.js';
 import { AccessModule } from './access/access.module.js';
 import { AuditModule } from './audit/audit.module.js';
+import { AppointmentsModule } from './tenant/sections/appointments/appointments.module.js';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { AuditModule } from './audit/audit.module.js';
     BootstrapModule,
     AccessModule,
     AuditModule,
+    AppointmentsModule,
   ],
   controllers: [AppController],
   providers: [
