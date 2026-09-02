@@ -32,6 +32,7 @@ import type {
   UpdateProfileDto,
 } from './dto/index.js';
 import type { JwtPayload } from '../core/interfaces/context.interface.js';
+import { PrismaService } from '../prisma/prisma.service.js';
 
 @Injectable()
 export class AuthService {
@@ -44,6 +45,7 @@ export class AuthService {
     private readonly invitationsService: InvitationsService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly prisma: PrismaService,
   ) {}
 
   // ── Authentication Flows ──────────────────────────────────────────────────
@@ -377,7 +379,8 @@ export class AuthService {
         name: membership.tenant.name,
         vertical: membership.tenant.vertical,
         role: membership.role,
-        permissions: membership.permissions,
+        roleKey: membership.roleKey ?? this.legacyRoleKey(membership.role),
+        permissions: await this.resolveMembershipPermissions(membership),
         activeFeatures: membership.tenant.features
           .filter((f: any) => f.isEnabled)
           .map((f: any) => f.featureKey),
@@ -400,7 +403,23 @@ export class AuthService {
         name: m.tenant.name,
         vertical: m.tenant.vertical,
         role: m.role,
+        roleKey: m.roleKey ?? this.legacyRoleKey(m.role),
       }));
+  }
+
+  private legacyRoleKey(role: string): string {
+    return {
+      OWNER: 'tenant_owner',
+      MANAGER: 'tenant_manager',
+      STAFF: 'tenant_staff',
+      CASHIER: 'tenant_cashier',
+    }[role] ?? role.toLowerCase();
+  }
+
+  private async resolveMembershipPermissions(membership: any): Promise<string[]> {
+    const roleKey = membership.roleKey ?? this.legacyRoleKey(membership.role);
+    const definition = await this.prisma.roleDefinition.findUnique({ where: { key: roleKey } });
+    return [...new Set([...(membership.permissions ?? []), ...(definition?.isActive ? definition.permissions : [])])];
   }
 
   // ── Token Issuance Helpers ───────────────────────────────────────────────

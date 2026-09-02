@@ -60,6 +60,13 @@ export class CapabilityService {
       effect: item.effect,
       source: item.source,
     }));
+    const roleDefinition = membership.roleKey
+      ? await this.prisma.roleDefinition.findUnique({ where: { key: membership.roleKey } })
+      : null;
+    const permissions = [...new Set([
+      ...(membership.permissions ?? []),
+      ...(roleDefinition?.isActive ? roleDefinition.permissions : []),
+    ])];
 
     const result = this.evaluator.evaluate(
       entries.map((entry) => this.toCatalogEntry(entry)),
@@ -75,7 +82,8 @@ export class CapabilityService {
             ? entitlements.filter((rule) => rule.source === 'owner_override')
             : [],
         role: membership.role,
-        permissions: membership.permissions,
+        roleKey: membership.roleKey ?? undefined,
+        permissions,
       },
     );
 

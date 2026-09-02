@@ -8,10 +8,12 @@ import { JwtStrategy } from './strategies/jwt.strategy.js';
 import { GoogleStrategy } from './strategies/google.strategy.js';
 import { InvitationsModule } from '../invitations/invitations.module.js';
 import { SystemConstants, AuthConstants } from '../core/constants/index.js';
+import { PrismaModule } from '../prisma/prisma.module.js';
 
 @Module({
   imports: [
     InvitationsModule,
+    PrismaModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],

@@ -55,11 +55,19 @@ export class RolesGuard implements CanActivate {
     }
 
     // OWNER has complete access within their tenant
-    if (tenantContext.role === Role.OWNER) {
+    const permissions = tenantContext.permissions ?? [];
+    const hasAllPermissions = permissions.includes('*') || permissions.includes('ALL');
+    const isOwnerLike = tenantContext.role === Role.OWNER || tenantContext.roleKey === 'tenant_owner' || hasAllPermissions;
+    if (isOwnerLike) {
       return true;
     }
 
-    const hasRole = requiredRoles.includes(tenantContext.role);
+    const isManagerLike = tenantContext.role === Role.MANAGER ||
+      tenantContext.roleKey === 'tenant_manager' ||
+      permissions.includes('tenant:employees:manage');
+    const hasRole = requiredRoles.includes(tenantContext.role) ||
+      (requiredRoles.includes(Role.MANAGER) && isManagerLike) ||
+      (requiredRoles.includes(Role.STAFF) && Boolean(tenantContext.roleKey));
     if (!hasRole) {
       throw new ForbiddenException(
         `Permission denied: Your role (${tenantContext.role}) lacks required permissions. Required: [${requiredRoles.join(', ')}]`,
