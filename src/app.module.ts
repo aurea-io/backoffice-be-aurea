@@ -18,6 +18,7 @@ import { AccessModule } from './access/access.module.js';
 import { AuditModule } from './audit/audit.module.js';
 import { AppointmentsModule } from './tenant/sections/appointments/appointments.module.js';
 import { InventoryModule } from './tenant/sections/inventory/inventory.module.js';
+import { RestaurantModule } from './tenant/sections/restaurant/restaurant.module.js';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { InventoryModule } from './tenant/sections/inventory/inventory.module.js
     AuditModule,
     AppointmentsModule,
     InventoryModule,
+    RestaurantModule,
   ],
   controllers: [AppController],
   providers: [

@@ -60,6 +60,22 @@ enum BookingPaymentStatus {
   waived
 }
 
+enum RestaurantTableStatus {
+  available
+  occupied
+  reserved
+  billing
+}
+
+enum OrderStatus {
+  open
+  preparing
+  ready
+  served
+  paid
+  canceled
+}
+
 // -----------------------------------------------------------------------------
 // MODELS
 // -----------------------------------------------------------------------------
@@ -104,6 +120,8 @@ model Tenant {
   brandingVersions TenantBrandingVersion[]
   bookings     Booking[]
   inventoryItems InventoryItem[]
+  restaurantTables RestaurantTable[]
+  orders       Order[]
   auditEvents AuditEvent[]
 }
 
@@ -391,6 +409,7 @@ model CatalogItem {
 
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   bookings    Booking[]
+  orderLines  OrderLine[]
 
   @@index([tenantId])
   @@index([tenantId, isActive])
@@ -446,6 +465,46 @@ model StockMovement {
   createdAt       DateTime @default(now())
   item            InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
   @@index([tenantId, createdAt])
+}
+
+model RestaurantTable {
+  id        String               @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId  String               @db.ObjectId
+  number    Int
+  seats     Int                  @default(2)
+  status    RestaurantTableStatus @default(available)
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+  tenant    Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orders    Order[]
+  @@unique([tenantId, number])
+}
+
+model Order {
+  id        String      @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId  String      @db.ObjectId
+  tableId   String?     @db.ObjectId
+  status    OrderStatus @default(open)
+  customerName String?
+  notes     String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  tenant    Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  table     RestaurantTable? @relation(fields: [tableId], references: [id], onDelete: SetNull)
+  lines     OrderLine[]
+  @@index([tenantId, status])
+  @@index([tableId, status])
+}
+
+model OrderLine {
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  orderId     String      @db.ObjectId
+  catalogItemId String    @db.ObjectId
+  quantity    Int         @default(1)
+  unitPriceCents Int
+  guestName   String?
+  order       Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  catalogItem CatalogItem @relation(fields: [catalogItemId], references: [id], onDelete: Restrict)
 }
 
 // Global, platform-scoped definition of modules and functions.
