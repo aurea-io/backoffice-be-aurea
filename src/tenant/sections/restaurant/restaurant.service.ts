@@ -1,10 +1,11 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service.js';
 import type { CreateOrderDto, CreateTableDto, UpdateOrderDto, UpdateTableDto } from './dto/restaurant.dto.js';
+import { CouponsService } from '../../../coupons/coupons.service.js';
 
 @Injectable()
 export class RestaurantService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly coupons: CouponsService) {}
   listTables(tenantId: string) { return this.prisma.restaurantTable.findMany({ where: { tenantId }, include: { orders: { where: { status: { not: 'paid' as any } }, include: { lines: true } } }, orderBy: { number: 'asc' } }); }
   createTable(tenantId: string, dto: CreateTableDto) { return this.prisma.restaurantTable.create({ data: { tenantId, number: dto.number, seats: dto.seats ?? 2 } }); }
   async updateTable(tenantId: string, id: string, dto: UpdateTableDto) { const table = await this.prisma.restaurantTable.findFirst({ where: { id, tenantId } }); if (!table) throw new NotFoundException('Mesa no encontrada.'); return this.prisma.restaurantTable.update({ where: { id }, data: { status: dto.status } }); }
@@ -23,7 +24,9 @@ export class RestaurantService {
     const catalog = await this.prisma.catalogItem.findMany({ where: { tenantId, id: { in: dto.lines.map((line) => line.catalogItemId) }, isActive: true } });
     if (catalog.length !== new Set(dto.lines.map((line) => line.catalogItemId)).size) throw new BadRequestException('Uno o más ítems no están disponibles.');
     const prices = new Map(catalog.map((item) => [item.id, item.priceCents]));
-    return this.prisma.order.create({ data: { tenantId, tableId: dto.tableId, customerName: dto.customerName?.trim(), notes: dto.notes?.trim(), channel: dto.channel, deliveryAddress: dto.deliveryAddress?.trim(), deliveryStatus: dto.channel === 'delivery' ? 'pending' : undefined, lines: { create: dto.lines.map((line) => ({ catalogItemId: line.catalogItemId, quantity: line.quantity, guestName: line.guestName?.trim(), unitPriceCents: prices.get(line.catalogItemId)! })) } }, include: { table: true, lines: { include: { catalogItem: true } } } });
+    const subtotalCents = dto.lines.reduce((sum, line) => sum + line.quantity * prices.get(line.catalogItemId)!, 0);
+    const discount = dto.couponCode ? await this.coupons.redeem(tenantId, dto.couponCode, subtotalCents) : undefined;
+    return this.prisma.order.create({ data: { tenantId, tableId: dto.tableId, customerName: dto.customerName?.trim(), notes: dto.notes?.trim(), channel: dto.channel, deliveryAddress: dto.deliveryAddress?.trim(), deliveryStatus: dto.channel === 'delivery' ? 'pending' : undefined, couponCode: discount?.code, discountCents: discount?.discountCents ?? 0, lines: { create: dto.lines.map((line) => ({ catalogItemId: line.catalogItemId, quantity: line.quantity, guestName: line.guestName?.trim(), unitPriceCents: prices.get(line.catalogItemId)! })) } }, include: { table: true, lines: { include: { catalogItem: true } } } });
   }
   async createPublicOrder(publicId: string, dto: CreateOrderDto) {
     const tenant = await this.prisma.tenant.findUnique({ where: { slug: publicId.trim().toLowerCase() }, select: { id: true, isActive: true } });

@@ -24,6 +24,7 @@ import { ClientsModule } from './tenant/sections/clients/clients.module.js';
 import { SubscriptionGuard } from './core/guards/subscription.guard.js';
 import { PaymentsModule } from './payments/payments.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
+import { CouponsModule } from './coupons/coupons.module.js';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { NotificationsModule } from './notifications/notifications.module.js';
     ClientsModule,
     PaymentsModule,
     NotificationsModule,
+    CouponsModule,
   ],
   controllers: [AppController],
   providers: [

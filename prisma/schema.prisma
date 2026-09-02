@@ -113,6 +113,11 @@ enum NotificationStatus {
   failed
 }
 
+enum DiscountType {
+  percentage
+  fixed
+}
+
 // -----------------------------------------------------------------------------
 // MODELS
 // -----------------------------------------------------------------------------
@@ -165,6 +170,7 @@ model Tenant {
   cashSessions CashSession[]
   payments Payment[]
   notifications Notification[]
+  coupons Coupon[]
   auditEvents AuditEvent[]
 }
 
@@ -393,6 +399,25 @@ model Notification {
 
   @@index([tenantId, status, createdAt])
   @@index([channel, recipient])
+}
+
+model Coupon {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId    String       @db.ObjectId
+  code        String
+  type        DiscountType
+  value       Int
+  maxUses     Int?
+  usedCount   Int          @default(0)
+  expiresAt   DateTime?
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, code])
+  @@index([tenantId, isActive, expiresAt])
 }
 
 model SubscriptionAddon {
@@ -655,6 +680,8 @@ model Order {
   deliveryStatus DeliveryStatus?
   deliveryAddress String?
   paymentStatus BookingPaymentStatus @default(pending)
+  couponCode String?
+  discountCents Int @default(0)
   customerName String?
   notes     String?
   createdAt DateTime    @default(now())
