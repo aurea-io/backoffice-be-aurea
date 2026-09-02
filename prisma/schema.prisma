@@ -518,6 +518,9 @@ model CatalogItem {
   title       String
   description String?
   priceCents  Int
+  sku         String?
+  stockInitial Float?
+  professionalId String? @db.ObjectId
   category    String?
   categoryId  String?  @db.ObjectId
   modifierGroupIds String[] @default([])
@@ -535,6 +538,7 @@ model CatalogItem {
 
   @@index([tenantId])
   @@index([tenantId, isActive])
+  @@index([tenantId, sku])
 }
 
 model CatalogCategory {

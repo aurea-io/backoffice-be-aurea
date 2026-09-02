@@ -138,11 +138,15 @@ export class CatalogService {
 
   async create(tenantId: string, dto: CreateCatalogItemDto) {
     await this.validateStructure(tenantId, dto.categoryId, dto.modifierGroupIds);
+    if (dto.professionalId && !(await this.prisma.tenantUser.findFirst({ where: { tenantId, userId: dto.professionalId, isActive: true } }))) throw new BadRequestException('El profesional no pertenece al tenant.');
     return this.catalogRepo.create({
       tenantId,
       title: dto.title,
       description: dto.description,
       priceCents: dto.priceCents,
+      sku: dto.sku,
+      stockInitial: dto.stockInitial,
+      professionalId: dto.professionalId,
       category: dto.category,
       categoryId: dto.categoryId,
       modifierGroupIds: dto.modifierGroupIds,
@@ -157,11 +161,15 @@ export class CatalogService {
   async update(tenantId: string, id: string, dto: UpdateCatalogItemDto) {
     await this.findOne(tenantId, id);
     await this.validateStructure(tenantId, dto.categoryId, dto.modifierGroupIds);
+    if (dto.professionalId && !(await this.prisma.tenantUser.findFirst({ where: { tenantId, userId: dto.professionalId, isActive: true } }))) throw new BadRequestException('El profesional no pertenece al tenant.');
 
     return this.catalogRepo.update(id, {
       title: dto.title ? dto.title.trim() : undefined,
       description: dto.description !== undefined ? dto.description?.trim() : undefined,
       priceCents: dto.priceCents,
+      sku: dto.sku?.trim().toUpperCase(),
+      stockInitial: dto.stockInitial,
+      professionalId: dto.professionalId,
       category: dto.category !== undefined ? dto.category?.trim() : undefined,
       categoryId: dto.categoryId,
       modifierGroupIds: dto.modifierGroupIds,

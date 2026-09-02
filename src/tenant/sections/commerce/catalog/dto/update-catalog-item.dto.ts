@@ -20,6 +20,10 @@ export class UpdateCatalogItemDto {
   @Min(0, { message: 'Price cannot be negative' })
   priceCents?: number;
 
+  @IsString() @IsOptional() sku?: string;
+  @IsInt() @IsOptional() @Min(0) stockInitial?: number;
+  @IsString() @IsOptional() professionalId?: string;
+
   @IsString()
   @IsOptional()
   category?: string;

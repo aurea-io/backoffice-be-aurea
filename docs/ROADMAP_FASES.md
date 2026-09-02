@@ -70,7 +70,7 @@ graph TD
 > **Objetivo:** Permitir a cualquier tipo de comercio cargar sus productos o servicios.
 - [x] Catálogo base de productos y servicios con precio, duración, imagen y metadatos.
 - [x] CRUD de Categorías y Subcategorías jerárquicas.
-- [ ] Modelo de Items de Catálogo enriquecido:
+- [x] Modelo de Items de Catálogo enriquecido:
   - Modo Producto Físico (artículos, precios, costo, SKU, stock inicial).
   - Modo Servicio / Turno (duración en minutos, precio, profesional asignado).
 - [x] Grupos de Opciones / Modificadores (ej: puntos de cocción, agregados, salsas, talles, colores).
