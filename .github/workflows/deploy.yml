@@ -42,10 +42,15 @@ jobs:
     permissions:
       contents: read
       packages: write
+    outputs:
+      revision: ${{ steps.revision.outputs.sha }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: ${{ github.event.release.tag_name || github.ref }}
+      - name: Capture deployed revision
+        id: revision
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
       - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
         with:
@@ -64,7 +69,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: AUREA_COMMIT_ID=${{ github.sha }}
+          build-args: AUREA_COMMIT_ID=${{ steps.revision.outputs.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -97,18 +102,20 @@ jobs:
 
   smoke-test:
     name: Smoke test backend
-    if: ${{ always() && needs.deploy.result == 'success' }}
-    needs: [deploy]
+    if: ${{ always() && needs.deploy.result == 'success' && needs.deploy.outputs.configured == 'true' }}
+    needs: [deploy, publish]
     runs-on: ubuntu-latest
     timeout-minutes: 8
     env:
       BACKEND_URL: ${{ vars.BACKEND_URL || 'https://aurea-backoffice-be.onrender.com' }}
+      EXPECTED_COMMIT: ${{ needs.publish.outputs.revision }}
     steps:
       - name: Wait for backend health
         run: |
           set -euo pipefail
           for attempt in {1..16}; do
-            if curl --fail --silent --show-error --max-time 15 "${BACKEND_URL}/api/health/live" | grep -q '"status":"ok"'; then exit 0; fi
+            response=$(curl --fail --silent --show-error --max-time 15 "${BACKEND_URL}/api/health/live" || true)
+            if grep -q '"status":"ok"' <<<"${response}" && grep -q "\"commit\":\"${EXPECTED_COMMIT}\"" <<<"${response}"; then exit 0; fi
             sleep 15
           done
           echo "Backend health check failed at ${BACKEND_URL}/api/health/live" >&2
@@ -123,8 +130,8 @@ jobs:
       event-type: image
       environment: production
       image: ghcr.io/aurea-io/backoffice-be-aurea
-      version: sha-${{ github.sha }}
-      source-commit: ${{ github.sha }}
+      version: sha-${{ needs.publish.outputs.revision }}
+      source-commit: ${{ needs.publish.outputs.revision }}
       commit-message: ${{ github.event.head_commit.message || 'workflow dispatch' }}
       status: ${{ needs.publish.result == 'success' && needs.verify.result == 'success' && 'success' || 'failure' }}
     secrets:
@@ -142,8 +149,8 @@ jobs:
     with:
       event-type: deploy
       environment: production
-      version: latest
-      source-commit: ${{ github.sha }}
+      version: sha-${{ needs.publish.outputs.revision }}
+      source-commit: ${{ needs.publish.outputs.revision }}
       commit-message: ${{ github.event.head_commit.message || 'workflow dispatch' }}
       status: ${{ needs.deploy.outputs.configured == 'false' && 'skipped' || needs.smoke-test.result == 'success' && 'success' || 'failure' }}
       reason: ${{ needs.deploy.outputs.configured == 'false' && needs.deploy.outputs.reason || needs.smoke-test.result == 'failure' && 'El smoke test de salud del backend falló.' || '' }}

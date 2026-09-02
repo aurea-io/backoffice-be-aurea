@@ -13,6 +13,8 @@ RUN npm ci --ignore-scripts \
 
 COPY nest-cli.json tsconfig*.json .prettierrc oxlint.json ./
 COPY src ./src
+ARG AUREA_COMMIT_ID=unknown
+ENV AUREA_COMMIT_ID=${AUREA_COMMIT_ID}
 RUN npm run build \
   && npm prune --omit=dev \
   && npm cache clean --force \
