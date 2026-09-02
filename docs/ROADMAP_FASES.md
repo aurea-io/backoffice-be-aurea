@@ -61,7 +61,7 @@ graph TD
   - Selección de Rol (`MANAGER`, `STAFF`, `CASHIER`).
   - Checkboxes para asignar permisos y submódulos específicos según las features activas del local.
 - [ ] Guard y Decorador en Backend `@RequirePermissions('tables.view', 'catalog.edit')` que valide contra `TenantUser.permissions`.
-- [ ] Filtrado dinámico del Sidebar del empleado en Frontend para mostrar solo las opciones para las que tiene permisos.
+- [x] Filtrado dinámico del Sidebar y protección de rutas del empleado por permisos granulares.
 - [ ] Perfil del empleado y configuración de preferencias individuales.
 
 ---
