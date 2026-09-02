@@ -136,6 +136,7 @@ model User {
   passwordHash String?
   googleId     String?  @unique
   avatarUrl    String?
+  preferences  Json?
   active       Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

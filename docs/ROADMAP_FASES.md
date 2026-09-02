@@ -62,7 +62,7 @@ graph TD
   - Checkboxes para asignar permisos y submódulos específicos según las features activas del local.
 - [x] Guard y Decorador en Backend `@RequirePermissions('tables.view', 'catalog.edit')` que valide contra `TenantUser.permissions`.
 - [x] Filtrado dinámico del Sidebar y protección de rutas del empleado por permisos granulares.
-- [ ] Perfil del empleado y configuración de preferencias individuales.
+- [x] Perfil del empleado y configuración de preferencias individuales.
 
 ---
 
