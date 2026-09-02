@@ -22,6 +22,7 @@ import { RestaurantModule } from './tenant/sections/restaurant/restaurant.module
 import { PosModule } from './tenant/sections/pos/pos.module.js';
 import { ClientsModule } from './tenant/sections/clients/clients.module.js';
 import { SubscriptionGuard } from './core/guards/subscription.guard.js';
+import { PaymentsModule } from './payments/payments.module.js';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { SubscriptionGuard } from './core/guards/subscription.guard.js';
     RestaurantModule,
     PosModule,
     ClientsModule,
+    PaymentsModule,
   ],
   controllers: [AppController],
   providers: [

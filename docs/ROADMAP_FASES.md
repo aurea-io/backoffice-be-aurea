@@ -103,7 +103,7 @@ graph TD
 - [x] **Módulo POS / Caja Diaria:** Apertura y cierre de caja, arqueo en efectivo y medios digitales.
 - [x] **Flujo de Comandas & Facturación:** Adición de productos a una mesa/pedido y estados de cobro; división de cuentas y ticket fiscal quedan pendientes.
 - [x] **Módulo de Delivery & Takeaway:** Canales takeaway/delivery y estado de entrega; logística con cadete queda pendiente.
-- [ ] Integración con pasarelas de pago (Mercado Pago QR / Checkout, Stripe).
+- [x] Contrato de intents y webhooks con adaptadores HTTP para Mercado Pago y Stripe; requiere credenciales y validación de firma por ambiente para producción.
 
 ---
 

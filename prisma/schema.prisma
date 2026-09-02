@@ -95,6 +95,13 @@ enum DeliveryStatus {
   canceled
 }
 
+enum PaymentStatus {
+  pending
+  approved
+  rejected
+  refunded
+}
+
 // -----------------------------------------------------------------------------
 // MODELS
 // -----------------------------------------------------------------------------
@@ -145,6 +152,7 @@ model Tenant {
   restaurantTables RestaurantTable[]
   orders       Order[]
   cashSessions CashSession[]
+  payments Payment[]
   auditEvents AuditEvent[]
 }
 
@@ -329,6 +337,28 @@ model Subscription {
   @@index([tenantId, status])
   @@index([tenantId, currentPeriodEnd])
   @@index([planId, status])
+}
+
+model Payment {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId      String        @db.ObjectId
+  provider      String
+  status        PaymentStatus @default(pending)
+  amountCents   Int
+  currency      String
+  referenceType String
+  referenceId   String
+  externalId    String?
+  checkoutUrl   String?
+  metadata      Json?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status, createdAt])
+  @@index([provider, externalId])
+  @@index([tenantId, referenceType, referenceId])
 }
 
 model SubscriptionAddon {
