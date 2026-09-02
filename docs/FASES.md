@@ -33,6 +33,8 @@ graph TD
 
 ## 💳 2. Planes, Membresías y Suscripciones de Tenants
 
+> **Estado de implementación:** El esquema Prisma, el CRUD de planes, la asignación a tenants, la sincronización de features y la consulta `/api/tenant/billing` ya están disponibles. Restan checkout, cobro recurrente y enforcement completo de límites.
+
 Los comercios pagan un abono recurrente (mensual/anual). Cada plan empaqueta un conjunto de módulos y límites, con la posibilidad de contratar add-ons extras.
 
 ### ⏳ Lo que resta por hacer (Planes & Suscripciones)
