@@ -49,6 +49,11 @@ export class TenantController {
     return this.tenantService.getBilling(tenant.tenantId);
   }
 
+  @Get('analytics')
+  async getAnalytics(@CurrentTenant() tenant: TenantContext) {
+    return this.tenantService.getAnalytics(tenant.tenantId);
+  }
+
   @Post('members')
   @HttpCode(HttpStatus.CREATED)
   @Roles(Role.OWNER, Role.MANAGER)

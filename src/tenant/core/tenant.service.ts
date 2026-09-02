@@ -77,6 +77,17 @@ export class TenantService {
     return subscription ?? { status: 'unconfigured', plan: null, addons: [] };
   }
 
+  async getAnalytics(tenantId: string) {
+    const [members, bookings, orders, inventory, activeFeatures] = await Promise.all([
+      this.prisma.tenantUser.count({ where: { tenantId, isActive: true } }),
+      this.prisma.booking.count({ where: { tenantId, status: { not: 'canceled' } } }),
+      this.prisma.order.count({ where: { tenantId, status: { not: 'canceled' } } }),
+      this.prisma.inventoryItem.aggregate({ where: { tenantId, isActive: true }, _count: { id: true }, _sum: { quantity: true } }),
+      this.prisma.tenantFeature.count({ where: { tenantId, isEnabled: true } }),
+    ]);
+    return { members, bookings, orders, inventoryItems: inventory._count.id, inventoryUnits: inventory._sum.quantity ?? 0, activeFeatures };
+  }
+
   async addMember(tenantId: string, email: string, role: Role = Role.STAFF, permissions?: string[]) {
     const targetEmail = email.toLowerCase().trim();
     const user = await this.userRepo.findByEmail(targetEmail);
