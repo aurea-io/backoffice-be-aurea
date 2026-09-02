@@ -1,6 +1,11 @@
-import 'dotenv/config';
 import { PrismaClient, Role, SubscriptionStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+
+if (typeof process.loadEnvFile === 'function') {
+  try {
+    process.loadEnvFile();
+  } catch {}
+}
 
 const prisma = new PrismaClient();
 
