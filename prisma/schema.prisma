@@ -172,6 +172,7 @@ model Tenant {
   brandingVersions TenantBrandingVersion[]
   bookings     Booking[]
   customers    Customer[]
+  loyaltyAccounts LoyaltyAccount[]
   inventoryItems InventoryItem[]
   restaurantTables RestaurantTable[]
   orders       Order[]
@@ -621,6 +622,7 @@ model Customer {
   phone        String?
   notes        CustomerNote[]
   bookings     Booking[]
+  loyaltyAccount LoyaltyAccount?
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 
@@ -629,6 +631,20 @@ model Customer {
   @@index([tenantId, name])
   @@index([tenantId, email])
   @@index([tenantId, phone])
+}
+
+model LoyaltyAccount {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId   String   @db.ObjectId
+  customerId String   @unique @db.ObjectId
+  points     Int      @default(0)
+  tier       String   @default("standard")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  @@unique([tenantId, customerId])
+  @@index([tenantId, points])
 }
 
 model CustomerNote {

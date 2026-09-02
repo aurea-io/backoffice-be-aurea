@@ -120,4 +120,4 @@ graph TD
 > **Objetivo:** Inteligencia de negocio y retención de clientes.
 - [x] Dashboard de Analíticas Avanzadas: productos más vendidos, ticket promedio, facturación acumulada y distribución de pedidos; horas pico y series diarias quedan pendientes.
 - [x] Módulo de Email Transaccional / Notificaciones por WhatsApp: cola persistente, reintentos y confirmación de turnos; requiere credenciales del proveedor.
-- [x] Descuentos y cupones promocionales: creación, vencimiento, límite de usos y aplicación a pedidos públicos; programa de fidelidad queda pendiente.
+- [x] Descuentos, cupones y fidelización: creación, vencimiento, límite de usos, aplicación a pedidos públicos y cuentas de puntos por cliente con acumulación/canje y niveles.
