@@ -168,6 +168,7 @@ model Plan {
   key         String       @unique
   name        String
   description String?
+  includedFeatures String[] @default([])
   isActive    Boolean      @default(true)
   prices      PlanPrice[]
   planAddons  PlanAddon[]
