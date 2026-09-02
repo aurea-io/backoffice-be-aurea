@@ -6,7 +6,7 @@ import {
   Optional,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { REQUIRE_FEATURE_KEY } from '../decorators/require-feature.decorator.js';
+import { REQUIRE_FEATURE_KEY, FEATURE_DOMAIN_KEY } from '../decorators/require-feature.decorator.js';
 import { CapabilityService } from '../../access/capability.service.js';
 import type { JwtPayload, TenantContext } from '../interfaces/context.interface.js';
 
@@ -18,12 +18,19 @@ export class FeatureGuard implements CanActivate {
   ) {}
 
   canActivate(context: ExecutionContext): boolean | Promise<boolean> {
-    const requiredFeature = this.reflector.getAllAndOverride<string>(
+    const explicitFeature = this.reflector.getAllAndOverride<string>(
       REQUIRE_FEATURE_KEY,
       [context.getHandler(), context.getClass()],
     );
+    const domain = this.reflector.getAllAndOverride<string>(
+      FEATURE_DOMAIN_KEY,
+      [context.getHandler(), context.getClass()],
+    );
+
+    const requiredFeature = explicitFeature || domain;
 
     if (!requiredFeature) return true;
+
 
     const request = context.switchToHttp().getRequest();
     const tenantContext: TenantContext | undefined = request.tenantContext;
