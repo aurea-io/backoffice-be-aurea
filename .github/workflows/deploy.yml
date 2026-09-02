@@ -4,6 +4,11 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      release-tag:
+        description: Release tag to deploy
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -24,7 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          ref: ${{ github.event.release.tag_name || github.ref }}
+          ref: ${{ inputs.release-tag || github.event.release.tag_name || github.ref }}
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
@@ -47,7 +52,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          ref: ${{ github.event.release.tag_name || github.ref }}
+          ref: ${{ inputs.release-tag || github.event.release.tag_name || github.ref }}
       - name: Capture deployed revision
         id: revision
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
@@ -130,7 +135,7 @@ jobs:
       event-type: image
       environment: production
       image: ghcr.io/aurea-io/backoffice-be-aurea
-      version: ${{ github.event.release.tag_name || format('manual-{0}', github.run_number) }}
+      version: ${{ inputs.release-tag || github.event.release.tag_name || format('manual-{0}', github.run_number) }}
       source-commit: ${{ needs.publish.outputs.revision }}
       commit-message: ${{ github.event.release.name || github.event.release.tag_name || github.event.head_commit.message || 'workflow dispatch' }}
       status: ${{ needs.publish.result == 'success' && needs.verify.result == 'success' && 'success' || 'failure' }}
@@ -149,7 +154,7 @@ jobs:
     with:
       event-type: deploy
       environment: production
-      version: ${{ github.event.release.tag_name || format('manual-{0}', github.run_number) }}
+      version: ${{ inputs.release-tag || github.event.release.tag_name || format('manual-{0}', github.run_number) }}
       source-commit: ${{ needs.publish.outputs.revision }}
       commit-message: ${{ github.event.release.name || github.event.release.tag_name || github.event.head_commit.message || 'workflow dispatch' }}
       status: ${{ needs.deploy.outputs.configured == 'false' && 'skipped' || needs.smoke-test.result == 'success' && 'success' || 'failure' }}
