@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { RestaurantController, PublicRestaurantOrdersController } from './restaurant.controller.js';
+import { RestaurantController, PublicRestaurantOrdersController, PublicTableBookingsController } from './restaurant.controller.js';
 import { RestaurantService } from './restaurant.service.js';
 import { CouponsModule } from '../../../coupons/coupons.module.js';
-@Module({ imports: [CouponsModule], controllers: [RestaurantController, PublicRestaurantOrdersController], providers: [RestaurantService] }) export class RestaurantModule {}
+@Module({ imports: [CouponsModule], controllers: [RestaurantController, PublicRestaurantOrdersController, PublicTableBookingsController], providers: [RestaurantService] }) export class RestaurantModule {}

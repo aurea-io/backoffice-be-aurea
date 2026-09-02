@@ -86,7 +86,7 @@ graph TD
 - [x] **Gestión de Salón & Mesas (`tables`):** Modelo, API de estados y pantalla operativa inicial.
 - [x] **Pedidos base:** Modelo de pedidos/líneas, validación de catálogo y estados de preparación.
 - [x] **Comandera / KDS Pantalla de Cocina (`kitchen`):** Vista operativa con comandas, estados de preparación/despacho y refresco periódico.
-- [ ] **Reservas de Mesa (`bookings`):** Agenda de mesas de restaurante y confirmaciones; la agenda de turnos de servicios ya está implementada.
+- [x] **Reservas de Mesa (`bookings`):** Agenda pública de mesas, disponibilidad, asignación automática y confirmaciones; la agenda de turnos de servicios también está implementada.
 
 #### Vertical Belleza / Salud / Servicios:
 - [x] **Agenda de Turnos & Citas (`appointments`):** Reservas persistentes, disponibilidad, solapamientos y confirmación/cancelación.

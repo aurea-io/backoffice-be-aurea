@@ -60,6 +60,13 @@ enum BookingPaymentStatus {
   waived
 }
 
+enum TableBookingStatus {
+  requested
+  confirmed
+  canceled
+  completed
+}
+
 enum RestaurantTableStatus {
   available
   occupied
@@ -168,6 +175,7 @@ model Tenant {
   restaurantTables RestaurantTable[]
   orders       Order[]
   cashSessions CashSession[]
+  tableBookings TableBooking[]
   payments Payment[]
   notifications Notification[]
   coupons Coupon[]
@@ -668,7 +676,31 @@ model RestaurantTable {
   updatedAt DateTime             @updatedAt
   tenant    Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   orders    Order[]
+  bookings  TableBooking[]
   @@unique([tenantId, number])
+}
+
+model TableBooking {
+  id           String             @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId     String             @db.ObjectId
+  tableId      String             @db.ObjectId
+  customerName String
+  customerEmail String?
+  customerPhone String?
+  date         DateTime
+  startTime    String
+  durationMin  Int                @default(120)
+  partySize    Int                @default(2)
+  status       TableBookingStatus @default(requested)
+  notes        String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  tenant       Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  table        RestaurantTable    @relation(fields: [tableId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, date, status])
+  @@index([tableId, date, status])
 }
 
 model Order {
