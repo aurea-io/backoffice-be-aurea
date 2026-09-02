@@ -125,7 +125,7 @@ jobs:
     name: Notify image
     if: ${{ always() && needs.verify.result != 'skipped' }}
     needs: [verify, publish]
-    uses: aurea-io/aurea-ci/.github/workflows/notify.yml@f23cac745fb26144d4503c6666d0e113eac4a5d1
+    uses: aurea-io/aurea-ci/.github/workflows/notify.yml@59581084818b00f96f71dbc06bbad7a312ddf214
     with:
       event-type: image
       environment: production
@@ -144,8 +144,8 @@ jobs:
   notify-deploy:
     name: Notify deploy
     if: ${{ always() && needs.deploy.result != 'skipped' }}
-    needs: [publish, deploy, smoke-test]
-    uses: aurea-io/aurea-ci/.github/workflows/notify.yml@f23cac745fb26144d4503c6666d0e113eac4a5d1
+    needs: [publish, deploy, smoke-test, notify-image]
+    uses: aurea-io/aurea-ci/.github/workflows/notify.yml@59581084818b00f96f71dbc06bbad7a312ddf214
     with:
       event-type: deploy
       environment: production
@@ -154,6 +154,7 @@ jobs:
       commit-message: ${{ github.event.release.name || github.event.release.tag_name || github.event.head_commit.message || 'workflow dispatch' }}
       status: ${{ needs.deploy.outputs.configured == 'false' && 'skipped' || needs.smoke-test.result == 'success' && 'success' || 'failure' }}
       reason: ${{ needs.deploy.outputs.configured == 'false' && needs.deploy.outputs.reason || needs.deploy.result == 'failure' && 'El deploy a Render falló.' || needs.smoke-test.result == 'failure' && 'El smoke test de salud del backend falló.' || '' }}
+      discord-message-id: ${{ needs.notify-image.outputs.discord-message-id }}
     secrets:
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
