@@ -5,5 +5,4 @@ permissions:
   contents: write
 jobs:
   release:
-    uses: aurea-io/aurea-ci/.github/workflows/release.yml@v3
-    secrets: inherit
+    uses: aurea-io/aurea-ci/.github/workflows/release.yml@f23cac745fb26144d4503c6666d0e113eac4a5d1
