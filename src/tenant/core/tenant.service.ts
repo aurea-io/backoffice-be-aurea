@@ -44,24 +44,103 @@ export class TenantService {
       ? { ...currentSettings, ...dto.settings }
       : currentSettings;
 
-    if (dto.settings) {
+    const branding = dto.settings ? ((dto.settings as any).branding ?? dto.settings) : undefined;
+    if (branding) {
       try {
         validateBranding({
-          primaryColor: dto.settings.primaryColor ?? dto.settings.brandColor,
-          accentColor: dto.settings.accentColor,
-          textColor: dto.settings.textColor,
-          fontFamily: dto.settings.fontFamily,
-          logoUrl: dto.settings.logoUrl,
-          coverUrl: dto.settings.coverUrl,
+          primaryColor: branding.primaryColor ?? branding.brandColor,
+          accentColor: branding.accentColor,
+          textColor: branding.textColor,
+          fontFamily: branding.fontFamily,
+          logoUrl: branding.logoUrl,
+          coverUrl: branding.coverUrl,
         });
       } catch (error) {
         throw new BadRequestException(error instanceof Error ? error.message : 'Branding inválido.');
       }
     }
 
-    return this.tenantRepo.update(tenantId, {
-      name: dto.name ? dto.name.trim() : undefined,
-      settings: updatedSettings,
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.tenant.update({
+        where: { id: tenantId },
+        data: {
+          name: dto.name ? dto.name.trim() : undefined,
+          settings: updatedSettings,
+        },
+        include: { features: true },
+      });
+
+      if (branding) {
+        const latest = await tx.tenantBrandingVersion.findFirst({ where: { tenantId }, orderBy: { version: 'desc' } });
+        await tx.tenantBrandingVersion.updateMany({ where: { tenantId, isPublished: true }, data: { isPublished: false } });
+        await tx.tenantBrandingVersion.create({
+          data: {
+            tenantId,
+            version: (latest?.version ?? 0) + 1,
+            primaryColor: branding.primaryColor ?? branding.brandColor ?? '#7c3aed',
+            accentColor: branding.accentColor ?? '#a78bfa',
+            textColor: branding.textColor ?? '#18181b',
+            fontFamily: branding.fontFamily ?? 'sans',
+            logoUrl: branding.logoUrl ?? null,
+            coverUrl: branding.coverUrl ?? null,
+            layoutTokens: branding.layoutTokens ?? null,
+            overrides: branding.overrides ?? null,
+            isPublished: true,
+          },
+        });
+      }
+      return updated;
+    });
+  }
+
+  async getBrandingVersions(tenantId: string) {
+    return this.prisma.tenantBrandingVersion.findMany({ where: { tenantId }, orderBy: { version: 'desc' }, take: 4 });
+  }
+
+  async rollbackBranding(tenantId: string, version: number) {
+    if (!Number.isInteger(version) || version < 1) throw new BadRequestException('Versión de branding inválida.');
+    const target = await this.prisma.tenantBrandingVersion.findFirst({ where: { tenantId, version } });
+    if (!target) throw new NotFoundException('Versión de branding no encontrada.');
+    return this.prisma.$transaction(async (tx) => {
+      const tenant = await tx.tenant.findUnique({ where: { id: tenantId }, select: { settings: true } });
+      if (!tenant) throw new NotFoundException('Tenant no encontrado.');
+      const currentSettings = (tenant.settings as Record<string, any>) ?? {};
+      await tx.tenant.update({
+        where: { id: tenantId },
+        data: {
+          settings: {
+            ...currentSettings,
+            branding: {
+              ...(currentSettings.branding ?? {}),
+              primaryColor: target.primaryColor,
+              accentColor: target.accentColor,
+              textColor: target.textColor,
+              fontFamily: target.fontFamily,
+              logoUrl: target.logoUrl,
+              coverUrl: target.coverUrl,
+              layoutTokens: target.layoutTokens ?? undefined,
+              overrides: target.overrides ?? undefined,
+            },
+          },
+        },
+      });
+      await tx.tenantBrandingVersion.updateMany({ where: { tenantId, isPublished: true }, data: { isPublished: false } });
+      const latest = await tx.tenantBrandingVersion.findFirst({ where: { tenantId }, orderBy: { version: 'desc' } });
+      return tx.tenantBrandingVersion.create({
+        data: {
+          tenantId,
+          version: (latest?.version ?? 0) + 1,
+          primaryColor: target.primaryColor,
+          accentColor: target.accentColor,
+          textColor: target.textColor,
+          fontFamily: target.fontFamily,
+          logoUrl: target.logoUrl,
+          coverUrl: target.coverUrl,
+          layoutTokens: target.layoutTokens ?? null,
+          overrides: target.overrides ?? null,
+          isPublished: true,
+        },
+      });
     });
   }
 
