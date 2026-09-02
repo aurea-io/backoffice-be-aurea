@@ -27,6 +27,9 @@ export class ThemeService {
     const key = publicId.trim().toLowerCase();
     const cached = this.cache.get(key);
     if (cached && cached.expiresAt > Date.now()) {
+      if (requestedVersion !== undefined && cached.version !== requestedVersion) {
+        throw new NotFoundException('Requested theme version not found.');
+      }
       this.hits++;
       return cached;
     }
@@ -101,7 +104,7 @@ export class ThemeService {
         `  --aurea-tenant: "${tenant.slug}";`,
         '}',
         '',
-      ].join('\\n'),
+      ].join('\n'),
       version,
       etag: `"${publicId}-${version}"`,
     };
