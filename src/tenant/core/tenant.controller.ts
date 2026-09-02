@@ -39,6 +39,21 @@ export class TenantController {
     return this.tenantService.updateSettings(tenant.tenantId, dto);
   }
 
+  @Get('branding/versions')
+  @Roles(Role.OWNER, Role.MANAGER)
+  async getBrandingVersions(@CurrentTenant() tenant: TenantContext) {
+    return this.tenantService.getBrandingVersions(tenant.tenantId);
+  }
+
+  @Post('branding/rollback/:version')
+  @Roles(Role.OWNER)
+  async rollbackBranding(
+    @CurrentTenant() tenant: TenantContext,
+    @Param('version') version: string,
+  ) {
+    return this.tenantService.rollbackBranding(tenant.tenantId, Number(version));
+  }
+
   @Get('members')
   async getMembers(@CurrentTenant() tenant: TenantContext) {
     return this.tenantService.getMembers(tenant.tenantId);
