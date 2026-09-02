@@ -35,6 +35,9 @@ export class CatalogRepository {
     title: string;
     description?: string;
     priceCents: number;
+    sku?: string;
+    stockInitial?: number;
+    professionalId?: string;
     category?: string;
     categoryId?: string;
     modifierGroupIds?: string[];
@@ -50,6 +53,9 @@ export class CatalogRepository {
         title: data.title.trim(),
         description: data.description?.trim(),
         priceCents: data.priceCents,
+        sku: data.sku?.trim().toUpperCase(),
+        stockInitial: data.stockInitial,
+        professionalId: data.professionalId,
         category: data.category?.trim(),
         categoryId: data.categoryId,
         modifierGroupIds: data.modifierGroupIds ?? [],
@@ -68,6 +74,9 @@ export class CatalogRepository {
       title: string;
       description: string;
       priceCents: number;
+      sku: string;
+      stockInitial: number;
+      professionalId: string;
       category: string;
       categoryId: string;
       modifierGroupIds: string[];
