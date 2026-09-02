@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CatalogRepository } from '../../../../repositories/index.js';
 import { PrismaService } from '../../../../prisma/prisma.service.js';
-import type { CreateCatalogItemDto, UpdateCatalogItemDto } from './dto/index.js';
+import type { CreateCatalogItemDto, UpdateCatalogItemDto, ImportCatalogDto } from './dto/index.js';
 import type { CreateCategoryDto, UpdateCategoryDto, CreateModifierGroupDto, UpdateModifierGroupDto, CreateModifierOptionDto, UpdateModifierOptionDto } from './dto/index.js';
 
 @Injectable()
@@ -110,6 +110,20 @@ export class CatalogService {
       this.prisma.catalogModifierGroup.findMany({ where: { tenantId: tenant.id, isActive: true }, include: { options: { where: { isActive: true }, orderBy: { name: 'asc' } } }, orderBy: { name: 'asc' } }),
     ]);
     return { tenant: { publicId: tenant.slug, name: tenant.name, vertical: tenant.vertical }, items, categories, modifierGroups };
+  }
+
+  async importCsv(tenantId: string, dto: ImportCatalogDto) {
+    const rows = dto.csv.replace(/^\uFEFF/, '').split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
+    if (rows.length < 2) throw new BadRequestException('El CSV debe incluir encabezados y al menos una fila.');
+    const parse = (row: string) => row.match(/("(?:[^"]|"")*"|[^,]*)(?:,|$)/g)?.slice(0, -1).map((value) => value.replace(/,$/, '').trim().replace(/^"|"$/g, '').replace(/""/g, '"')) || [];
+    const headers = parse(rows[0]).map((header) => header.toLowerCase());
+    const required = ['title', 'pricecents'];
+    if (required.some((header) => !headers.includes(header))) throw new BadRequestException('El CSV requiere las columnas title y priceCents.');
+    const errors: Array<{ row: number; message: string }> = [];
+    const data: Array<{ tenantId: string; title: string; priceCents: number; description?: string; category?: string; isService: boolean; durationMin?: number; imageUrl?: string }> = [];
+    rows.slice(1).forEach((row, index) => { const values = parse(row); const value = (key: string) => values[headers.indexOf(key)] || undefined; const title = value('title')?.trim(); const priceCents = Number(value('pricecents')); if (!title) errors.push({ row: index + 2, message: 'title vacío' }); else if (!Number.isInteger(priceCents) || priceCents < 0) errors.push({ row: index + 2, message: 'priceCents inválido' }); else data.push({ tenantId, title, priceCents, description: value('description'), category: value('category'), isService: value('isservice') === 'true', durationMin: value('durationmin') ? Number(value('durationmin')) : undefined, imageUrl: value('imageurl') }); });
+    if (!dto.dryRun && data.length) await this.prisma.catalogItem.createMany({ data: data as any });
+    return { dryRun: dto.dryRun ?? false, imported: dto.dryRun ? 0 : data.length, validRows: data.length, errors };
   }
 
   async findOne(tenantId: string, id: string) {

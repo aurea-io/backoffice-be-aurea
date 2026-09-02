@@ -74,7 +74,7 @@ graph TD
   - Modo Producto Físico (artículos, precios, costo, SKU, stock inicial).
   - Modo Servicio / Turno (duración en minutos, precio, profesional asignado).
 - [x] Grupos de Opciones / Modificadores (ej: puntos de cocción, agregados, salsas, talles, colores).
-- [ ] Carga masiva / Importación de productos vía CSV / Excel.
+- [x] Carga masiva / Importación de productos vía CSV; Excel puede exportarse a CSV antes de importar.
 - [ ] Carga y optimización de imágenes multimedia por producto.
 
 ---

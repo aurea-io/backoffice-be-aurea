@@ -13,7 +13,7 @@ import {
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { CatalogService } from './catalog.service.js';
-import { CreateCatalogItemDto, UpdateCatalogItemDto, CreateCategoryDto, UpdateCategoryDto, CreateModifierGroupDto, UpdateModifierGroupDto, CreateModifierOptionDto, UpdateModifierOptionDto } from './dto/index.js';
+import { CreateCatalogItemDto, UpdateCatalogItemDto, CreateCategoryDto, UpdateCategoryDto, CreateModifierGroupDto, UpdateModifierGroupDto, CreateModifierOptionDto, UpdateModifierOptionDto, ImportCatalogDto } from './dto/index.js';
 import { TenantContextGuard } from '../../../../core/guards/tenant.guard.js';
 import { FeatureGuard } from '../../../../core/guards/feature.guard.js';
 import { RolesGuard } from '../../../../core/guards/roles.guard.js';
@@ -99,6 +99,11 @@ export class CatalogController {
       isService !== undefined ? isService === 'true' : undefined;
     return this.catalogService.findAll(tenant.tenantId, category, isServiceBool);
   }
+
+  @Post('import')
+  @Roles(Role.OWNER, Role.MANAGER)
+  @RequirePermissions('catalog:write')
+  importCsv(@CurrentTenant() tenant: TenantContext, @Body() dto: ImportCatalogDto) { return this.catalogService.importCsv(tenant.tenantId, dto); }
 
   @Get(':id')
   async getOne(
