@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service.js';
 import { CreateInvitationDto } from './dto/create-invitation.dto.js';
-import { Role } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
 
 const INVITATION_MANAGER_ROLES = new Set<Role>([Role.OWNER, Role.MANAGER]);
 
@@ -35,14 +35,20 @@ export class InvitationsService {
     return tenantId.trim();
   }
 
-  async create(dto: CreateInvitationDto, currentUserId?: string, activeTenantId?: string, internal = false) {
+  async create(
+    dto: CreateInvitationDto,
+    currentUserId?: string,
+    activeTenantId?: string,
+    internal = false,
+    db: PrismaService | Prisma.TransactionClient = this.prisma,
+  ) {
     const tenantId = internal
       ? activeTenantId?.trim()
       : await this.requireTenantManager(currentUserId, activeTenantId);
     if (!tenantId) throw new ForbiddenException('An authenticated tenant context is required.');
     const email = dto.email.toLowerCase().trim();
 
-    const existingUser = await this.prisma.user.findUnique({ where: { email } });
+    const existingUser = await db.user.findUnique({ where: { email } });
     if (existingUser) {
       throw new ConflictException(`El usuario con email '${email}' ya se encuentra registrado.`);
     }
@@ -56,7 +62,7 @@ export class InvitationsService {
 
     const membership = internal
       ? null
-      : await this.prisma.tenantUser.findFirst({
+      : await db.tenantUser.findFirst({
           where: { userId: currentUserId, tenantId, isActive: true },
           select: { role: true },
         });
@@ -68,7 +74,7 @@ export class InvitationsService {
           ? Role.STAFF
           : requestedRole;
 
-    const invitation = await this.prisma.invitation.create({
+    const invitation = await db.invitation.create({
       data: {
         code,
         email,

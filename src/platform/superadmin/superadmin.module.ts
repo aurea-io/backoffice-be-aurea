@@ -4,9 +4,10 @@ import { SuperadminTenantsService } from './tenants.service.js';
 import { InvitationsModule } from '../../tenant/core/invitations/invitations.module.js';
 import { PlansController } from './plans.controller.js';
 import { PlansService } from './plans.service.js';
+import { AuditModule } from '../../audit/audit.module.js';
 
 @Module({
-  imports: [InvitationsModule],
+  imports: [InvitationsModule, AuditModule],
   controllers: [SuperadminController, PlansController],
   providers: [SuperadminTenantsService, PlansService],
   exports: [SuperadminTenantsService],

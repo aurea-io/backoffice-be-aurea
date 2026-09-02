@@ -15,6 +15,8 @@ import type {
   AssignFeatureDto,
   BatchFeaturesDto,
 } from './dto/index.js';
+import { AuditService } from '../../audit/audit.service.js';
+import { PrismaService } from '../../prisma/prisma.service.js';
 
 const VERTICAL_DEFAULT_PACKAGES: Record<string, string[]> = {
   gastronomy: ['catalog', 'tables', 'delivery', 'social_hub'],
@@ -33,6 +35,8 @@ export class SuperadminTenantsService {
     private readonly tenantRepo: TenantRepository,
     private readonly userRepo: UserRepository,
     private readonly invitationsService: InvitationsService,
+    private readonly auditService: AuditService,
+    private readonly prisma: PrismaService,
   ) {}
 
   // ── Tenant Queries ────────────────────────────────────────────────────────
@@ -63,7 +67,7 @@ export class SuperadminTenantsService {
 
   // ── Tenant Lifecycle ──────────────────────────────────────────────────────
 
-  async createTenant(data: CreateTenantDto) {
+  async createTenant(data: CreateTenantDto, actorUserId?: string) {
     const ownerEmail = data.ownerEmail.toLowerCase().trim();
     const slug = data.slug.toLowerCase().trim();
     await this.ensureSlugIsAvailable(slug);
@@ -77,29 +81,41 @@ export class SuperadminTenantsService {
         ? data.features.map((f) => f.toLowerCase().trim())
         : (VERTICAL_DEFAULT_PACKAGES[vertical] || [...SystemConstants.DEFAULT_BASE_FEATURES]);
 
-    // 2. Create tenant
-    const tenant = await this.tenantRepo.create({
-      name: data.name,
-      slug,
-      vertical,
-      settings: data.settings,
-      ownerId: existingUser ? existingUser.id : undefined,
-      defaultFeatures: features,
+    // 2. Create tenant, invitation, and audit event atomically.
+    const { tenant, invitation } = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.tenant.create({
+        data: {
+          name: data.name.trim(),
+          slug,
+          vertical,
+          settings: data.settings ?? {},
+          memberships: existingUser
+            ? { create: { userId: existingUser.id, role: Role.OWNER, permissions: [RoleConstants.ALL_PERMISSIONS] } }
+            : undefined,
+          features: { createMany: { data: features.map((featureKey) => ({ featureKey, isEnabled: true })) } },
+        },
+        include: {
+          features: true,
+          memberships: { include: { user: { select: { id: true, email: true, name: true } } } },
+        },
+      });
+      let generatedInvitation: any = null;
+      if (!existingUser) {
+        generatedInvitation = await this.invitationsService.create({
+          email: ownerEmail,
+          role: Role.OWNER,
+          daysValid: 14,
+        }, undefined, created.id, true, tx);
+      }
+      await this.auditService.record({ tenantId: created.id, actorUserId, action: 'tenant.created', entityType: 'Tenant', entityId: created.id, after: { name: created.name, slug: created.slug, vertical: created.vertical } }, tx);
+      return { tenant: created, invitation: generatedInvitation };
     });
 
-    // 3. If owner doesn't exist yet, generate exclusive invitation code with role OWNER
-    let invitation: any = null;
-    if (!existingUser) {
-      invitation = await this.invitationsService.create({
-        email: ownerEmail,
-        role: Role.OWNER,
-        daysValid: 14,
-      }, undefined, tenant.id, true);
+    if (invitation) {
       this.logger.log(
         `Generated OWNER invitation code for new tenant ${tenant.name}: ${invitation.code} (sent to ${ownerEmail})`,
       );
     }
-
     this.logger.log(
       `New tenant created: ${tenant.slug} (${tenant.name}) - Owner: ${ownerEmail} (${
         existingUser ? 'existing user' : 'invitation generated: ' + invitation?.code
@@ -112,29 +128,34 @@ export class SuperadminTenantsService {
     };
   }
 
-  async updateTenant(id: string, dto: UpdateTenantDto) {
-    await this.ensureTenantExists(id);
-
-    return this.tenantRepo.update(id, {
-      name: dto.name ? dto.name.trim() : undefined,
-      vertical: dto.vertical ? dto.vertical.toLowerCase().trim() : undefined,
-      isActive: typeof dto.isActive === 'boolean' ? dto.isActive : undefined,
-      settings: dto.settings,
+  async updateTenant(id: string, dto: UpdateTenantDto, actorUserId?: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const before = await tx.tenant.findUnique({ where: { id } });
+      if (!before) {
+        throw new NotFoundException(`Tenant with ID '${id}' not found.`);
+      }
+      const updated = await tx.tenant.update({
+        where: { id },
+        data: { name: dto.name ? dto.name.trim() : undefined, vertical: dto.vertical ? dto.vertical.toLowerCase().trim() : undefined, isActive: typeof dto.isActive === 'boolean' ? dto.isActive : undefined, settings: dto.settings },
+        include: { features: true },
+      });
+      await this.auditService.record({ tenantId: id, actorUserId, action: 'tenant.updated', entityType: 'Tenant', entityId: id, before: { name: before.name, vertical: before.vertical, isActive: before.isActive }, after: { name: updated.name, vertical: updated.vertical, isActive: updated.isActive } }, tx);
+      return updated;
     });
   }
 
-  async deleteTenant(id: string) {
-    const tenant = await this.ensureTenantExists(id);
-
-    if (tenant.slug === SystemConstants.SYSTEM_TENANT_SLUG) {
-      throw new BadRequestException('El tenant del sistema no puede ser eliminado.');
-    }
-
-    await this.tenantRepo.update(id, {
-      isActive: false,
-      deprecatedAt: new Date(),
-      maintenanceMode: true,
-      maintenanceMessage: 'Este comercio fue archivado y no acepta nuevas operaciones.',
+  async deleteTenant(id: string, actorUserId?: string) {
+    const tenant = await this.prisma.$transaction(async (tx) => {
+      const existing = await tx.tenant.findUnique({ where: { id } });
+      if (!existing) {
+        throw new NotFoundException(`Tenant with ID '${id}' not found.`);
+      }
+      if (existing.slug === SystemConstants.SYSTEM_TENANT_SLUG) {
+        throw new BadRequestException('El tenant del sistema no puede ser eliminado.');
+      }
+      await tx.tenant.update({ where: { id }, data: { isActive: false, deprecatedAt: new Date(), maintenanceMode: true, maintenanceMessage: 'Este comercio fue archivado y no acepta nuevas operaciones.' } });
+      await this.auditService.record({ tenantId: id, actorUserId, action: 'tenant.archived', entityType: 'Tenant', entityId: id, before: { isActive: existing.isActive }, after: { isActive: false, maintenanceMode: true }, reason: 'superadmin archive' }, tx);
+      return existing;
     });
     this.logger.log(`Tenant '${tenant.name}' (${tenant.slug}) archivado.`);
 
@@ -146,22 +167,36 @@ export class SuperadminTenantsService {
 
   // ── Feature Flag Management ───────────────────────────────────────────────
 
-  async assignFeature(tenantId: string, dto: AssignFeatureDto) {
+  async assignFeature(tenantId: string, dto: AssignFeatureDto, actorUserId?: string) {
     await this.ensureTenantExists(tenantId);
     const featureKey = dto.featureKey.toLowerCase().trim();
 
-    return this.tenantRepo.upsertFeature(tenantId, featureKey, dto.isEnabled);
+    return this.prisma.$transaction(async (tx) => {
+      const previous = await tx.tenantFeature.findUnique({ where: { tenantId_featureKey: { tenantId, featureKey } } });
+      const result = await tx.tenantFeature.upsert({ where: { tenantId_featureKey: { tenantId, featureKey } }, update: { isEnabled: dto.isEnabled }, create: { tenantId, featureKey, isEnabled: dto.isEnabled } });
+      await this.auditService.record({ tenantId, actorUserId, action: 'tenant.feature.updated', entityType: 'TenantFeature', entityId: result.id, before: previous ? { featureKey, isEnabled: previous.isEnabled } : { featureKey, absent: true }, after: { featureKey, isEnabled: dto.isEnabled } }, tx);
+      return result;
+    });
   }
 
-  async batchAssignFeatures(tenantId: string, dto: BatchFeaturesDto) {
+  async batchAssignFeatures(tenantId: string, dto: BatchFeaturesDto, actorUserId?: string) {
     await this.ensureTenantExists(tenantId);
 
     const normalizedFeatures = dto.features.map((f) => ({
       featureKey: f.featureKey.toLowerCase().trim(),
       isEnabled: f.isEnabled,
     }));
+    if (new Set(normalizedFeatures.map((feature) => feature.featureKey)).size !== normalizedFeatures.length) {
+      throw new BadRequestException('featureKey must be unique in a batch request');
+    }
 
-    return this.tenantRepo.batchUpsertFeatures(tenantId, normalizedFeatures);
+    return this.prisma.$transaction(async (tx) => {
+      const previous = await tx.tenantFeature.findMany({ where: { tenantId, featureKey: { in: normalizedFeatures.map((feature) => feature.featureKey) } } });
+      const previousByKey = new Map(previous.map((feature) => [feature.featureKey, feature]));
+      const result = await Promise.all(normalizedFeatures.map((feature) => tx.tenantFeature.upsert({ where: { tenantId_featureKey: { tenantId, featureKey: feature.featureKey } }, update: { isEnabled: feature.isEnabled }, create: { tenantId, featureKey: feature.featureKey, isEnabled: feature.isEnabled } })));
+      await this.auditService.record({ tenantId, actorUserId, action: 'tenant.features.batch_updated', entityType: 'Tenant', entityId: tenantId, before: { features: normalizedFeatures.map((feature) => { const prior = previousByKey.get(feature.featureKey); return prior ? { featureKey: prior.featureKey, isEnabled: prior.isEnabled } : { featureKey: feature.featureKey, absent: true }; }) }, after: { features: normalizedFeatures } }, tx);
+      return result;
+    });
   }
 
   // ── Platform Roles ────────────────────────────────────────────────────────
