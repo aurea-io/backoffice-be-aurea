@@ -5,4 +5,8 @@ export class FeatureConstants {
   static readonly DELIVERY = 'delivery';
   static readonly TABLES = 'tables';
   static readonly REVIEWS = 'reviews';
+  static readonly INVENTORY = 'inventory';
+  static readonly POS = 'pos_cashier';
+  static readonly ORDERS = 'orders';
+  static readonly KITCHEN = 'kitchen';
 }

@@ -100,9 +100,9 @@ graph TD
 
 ### 🟠 FASE 5: Punto de Venta (POS / Caja), Pedidos, Cobros y Delivery
 > **Objetivo:** Cobrar, emitir tickets y procesar pedidos multicanal.
-- [ ] **Módulo POS / Caja Diaria:** Apertura y cierre de caja, arqueo en efectivo y medios digitales.
-- [ ] **Flujo de Comandas & Facturación:** Adición de productos a una mesa/pedido, división de cuentas y ticket de venta.
-- [ ] **Módulo de Delivery & Takeaway:** Gestión de pedidos para llevar o con cadete propio.
+- [x] **Módulo POS / Caja Diaria:** Apertura y cierre de caja, arqueo en efectivo y medios digitales.
+- [x] **Flujo de Comandas & Facturación:** Adición de productos a una mesa/pedido y estados de cobro; división de cuentas y ticket fiscal quedan pendientes.
+- [x] **Módulo de Delivery & Takeaway:** Canales takeaway/delivery y estado de entrega; logística con cadete queda pendiente.
 - [ ] Integración con pasarelas de pago (Mercado Pago QR / Checkout, Stripe).
 
 ---
