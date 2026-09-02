@@ -9,7 +9,7 @@
 
 # Aurea Pages · Backoffice Backend (API)
 
-Backend modular y multitenant para la plataforma **Aurea Pages**, desarrollado con **NestJS**, **MongoDB** y **Prisma ORM**, con arquitectura de autorización tridimensional (**RBAC + FBAC**).
+Backend modular y multi-tenant para la plataforma **Aurea Pages**, desarrollado con **NestJS**, **MongoDB** y **Prisma ORM**, con arquitectura de autorización tridimensional (**RBAC + FBAC**).
 
 ## 📖 Documentación de Arquitectura y Negocio
 
