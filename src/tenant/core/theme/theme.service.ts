@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service.js';
+import { PrismaService } from '../../../prisma/prisma.service.js';
 
 const DEFAULT_THEME = {
   primaryColor: '#7c3aed',

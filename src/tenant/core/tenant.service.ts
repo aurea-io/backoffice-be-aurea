@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { Role } from '@prisma/client';
-import { TenantRepository, UserRepository } from '../repositories/index.js';
+import { TenantRepository, UserRepository } from '../../repositories/index.js';
 import type { UpdateTenantSettingsDto } from './dto/update-settings.dto.js';
 
 @Injectable()

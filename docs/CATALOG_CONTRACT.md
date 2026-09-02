@@ -1,7 +1,10 @@
 # Contrato de catálogo y capabilities
 
-El contrato compartido vive en `src/catalog/contracts` y define la forma que deben
-usar los manifiestos, el backend y el frontend para describir módulos dinámicos.
+El contrato compartido vive junto al módulo en
+`src/tenant/sections/<section>/<page>/contracts` y define la forma que deben usar
+los manifiestos, el backend y el frontend para describir módulos dinámicos. En el
+backoffice actual, la implementación está en
+`src/tenant/sections/commerce/catalog/contracts`.
 
 Cada contrato tiene una versión semántica y cada módulo y función posee una `key`
 estable. El validador rechaza:
@@ -20,7 +23,7 @@ describe qué existe y qué restricciones técnicas/comerciales declara cada pie
 Ejemplo mínimo:
 
 ```ts
-import { validateCatalogContract } from './contracts/index.js';
+import { validateCatalogContract } from './src/tenant/sections/commerce/catalog/contracts/index.js';
 
 const catalog = validateCatalogContract({
   version: '1.0.0',

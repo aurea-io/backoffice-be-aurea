@@ -14,16 +14,16 @@ import {
 import { Role } from '@prisma/client';
 import { CatalogService } from './catalog.service.js';
 import { CreateCatalogItemDto, UpdateCatalogItemDto } from './dto/index.js';
-import { TenantContextGuard } from '../core/guards/tenant.guard.js';
-import { FeatureGuard } from '../core/guards/feature.guard.js';
-import { RolesGuard } from '../core/guards/roles.guard.js';
-import { PermissionsGuard } from '../core/guards/permissions.guard.js';
-import { RequireFeature } from '../core/decorators/require-feature.decorator.js';
-import { Roles } from '../core/decorators/roles.decorator.js';
-import { RequirePermissions } from '../core/decorators/permissions.decorator.js';
-import { CurrentTenant } from '../core/decorators/tenant-context.decorator.js';
-import { FeatureConstants } from '../core/constants/index.js';
-import type { TenantContext } from '../core/interfaces/context.interface.js';
+import { TenantContextGuard } from '../../../../core/guards/tenant.guard.js';
+import { FeatureGuard } from '../../../../core/guards/feature.guard.js';
+import { RolesGuard } from '../../../../core/guards/roles.guard.js';
+import { PermissionsGuard } from '../../../../core/guards/permissions.guard.js';
+import { RequireFeature } from '../../../../core/decorators/require-feature.decorator.js';
+import { Roles } from '../../../../core/decorators/roles.decorator.js';
+import { RequirePermissions } from '../../../../core/decorators/permissions.decorator.js';
+import { CurrentTenant } from '../../../../core/decorators/tenant-context.decorator.js';
+import { FeatureConstants } from '../../../../core/constants/index.js';
+import type { TenantContext } from '../../../../core/interfaces/context.interface.js';
 
 @Controller('catalog')
 @UseGuards(TenantContextGuard, FeatureGuard, RolesGuard, PermissionsGuard)
