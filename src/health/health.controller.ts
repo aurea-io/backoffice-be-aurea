@@ -12,7 +12,7 @@ export class HealthController {
     return {
       status: 'ok',
       check: 'liveness',
-      commit: process.env.AUREA_COMMIT_ID ?? 'unknown',
+      commit: process.env.AUREA_COMMIT_ID ?? process.env.RENDER_GIT_COMMIT ?? 'unknown',
       timestamp: new Date().toISOString(),
     };
   }
