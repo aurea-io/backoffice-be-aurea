@@ -15,6 +15,7 @@ import { HealthModule } from './health/health.module.js';
 import { ThemeModule } from './tenant/core/theme/theme.module.js';
 import { BootstrapModule } from './bootstrap/bootstrap.module.js';
 import { AccessModule } from './access/access.module.js';
+import { AuditModule } from './audit/audit.module.js';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { AccessModule } from './access/access.module.js';
     ThemeModule,
     BootstrapModule,
     AccessModule,
+    AuditModule,
   ],
   controllers: [AppController],
   providers: [
