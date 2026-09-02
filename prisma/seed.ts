@@ -7,6 +7,17 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Iniciando seed para Aurea Backoffice...');
 
+  for (const role of [
+    { key: 'tenant_owner', scope: 'tenant', permissions: ['*'] },
+    { key: 'tenant_manager', scope: 'tenant', permissions: ['tenant:employees:read', 'tenant:employees:manage'] },
+    { key: 'tenant_staff', scope: 'tenant', permissions: ['tenant:employees:read'] },
+    { key: 'tenant_cashier', scope: 'tenant', permissions: ['tenant:orders:read', 'tenant:orders:manage'] },
+    { key: 'platform_owner', scope: 'platform', permissions: ['*'] },
+    { key: 'platform_readonly', scope: 'platform', permissions: ['platform:read'] },
+  ]) {
+    await prisma.roleDefinition.upsert({ where: { key: role.key }, update: role, create: role });
+  }
+
   const email = process.env.AUREA_ADMIN_EMAIL;
   const password = process.env.AUREA_ADMIN_PASSWORD;
   const name = process.env.AUREA_ADMIN_NAME || 'Superadmin Aurea';
@@ -108,7 +119,7 @@ async function main() {
   if (existingOwnerMembership) {
     await prisma.tenantUser.update({
       where: { id: existingOwnerMembership.id },
-      data: { role: Role.OWNER, permissions: ['*'], isActive: true },
+      data: { role: Role.OWNER, roleKey: 'tenant_owner', permissions: ['*'], isActive: true },
     });
   } else {
     await prisma.tenantUser.create({
@@ -116,6 +127,7 @@ async function main() {
         tenantId: demoTenant.id,
         userId: adminUser.id,
         role: Role.OWNER,
+        roleKey: 'tenant_owner',
         permissions: ['*'],
         isActive: true,
       },

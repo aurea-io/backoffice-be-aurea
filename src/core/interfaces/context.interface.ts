@@ -14,6 +14,7 @@ export interface TenantContext {
   name: string;
   vertical: string;
   role: Role;
+  roleKey?: string;
   permissions: string[];
   activeFeatures: string[];
   maintenanceMode?: boolean;

@@ -14,6 +14,17 @@ const users = [
 ];
 
 async function main() {
+  const roleDefinitions = [
+    { key: 'tenant_owner', scope: 'tenant', permissions: ['*'] },
+    { key: 'tenant_manager', scope: 'tenant', permissions: ['tenant:employees:read', 'tenant:employees:manage'] },
+    { key: 'tenant_staff', scope: 'tenant', permissions: ['tenant:employees:read'] },
+    { key: 'tenant_cashier', scope: 'tenant', permissions: ['tenant:orders:read', 'tenant:orders:manage'] },
+    { key: 'platform_owner', scope: 'platform', permissions: ['*'] },
+    { key: 'platform_readonly', scope: 'platform', permissions: ['platform:read'] },
+  ];
+  for (const role of roleDefinitions) {
+    await prisma.roleDefinition.upsert({ where: { key: role.key }, update: role, create: role });
+  }
   const passwordHash = await bcrypt.hash(password, 10);
   const tenant = await prisma.tenant.upsert({
     where: { slug: tenantSlug },
@@ -46,6 +57,13 @@ async function main() {
   }
 
   for (const item of users) {
+    const roleKey = item.platform ? 'tenant_owner' : {
+      OWNER: 'tenant_owner',
+      MANAGER: 'tenant_manager',
+      STAFF: 'tenant_staff',
+      CASHIER: 'tenant_cashier',
+      SUPERADMIN: 'tenant_owner',
+    }[item.role];
     const user = await prisma.user.upsert({
       where: { email: item.email },
       update: { name: item.name, passwordHash, active: true },
@@ -62,8 +80,8 @@ async function main() {
 
     await prisma.tenantUser.upsert({
       where: { tenantId_userId: { tenantId: tenant.id, userId: user.id } },
-      update: { role: item.role, permissions: item.permissions, isActive: true },
-      create: { tenantId: tenant.id, userId: user.id, role: item.role, permissions: item.permissions, isActive: true },
+      update: { role: item.role, roleKey, permissions: item.permissions, isActive: true },
+      create: { tenantId: tenant.id, userId: user.id, role: item.role, roleKey, permissions: item.permissions, isActive: true },
     });
   }
 

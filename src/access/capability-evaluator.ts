@@ -28,6 +28,7 @@ export interface CapabilityEvaluationContext {
   ownerOverrides?: CapabilityRule[];
   creditsAvailable?: Record<string, boolean>;
   role?: string;
+  roleKey?: string;
   permissions?: string[];
 }
 
@@ -64,7 +65,7 @@ export class CapabilityEvaluator {
       if (parents.some((key) => !resolve(byKey.get(key)!, next))) return (map[entry.key] = false);
 
       if (context.surface === 'private') {
-        if (entry.requiredRole && entry.requiredRole !== context.role) return (map[entry.key] = false);
+        if (entry.requiredRole && entry.requiredRole !== context.role && entry.requiredRole !== context.roleKey) return (map[entry.key] = false);
         const required = entry.permissions ?? [];
         if (required.some((permission) => !(context.permissions ?? []).includes('*') && !(context.permissions ?? []).includes(permission))) {
           return (map[entry.key] = false);
