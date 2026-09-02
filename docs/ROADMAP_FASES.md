@@ -85,7 +85,7 @@ graph TD
 #### Vertical Gastronómica:
 - [x] **Gestión de Salón & Mesas (`tables`):** Modelo, API de estados y pantalla operativa inicial.
 - [x] **Pedidos base:** Modelo de pedidos/líneas, validación de catálogo y estados de preparación.
-- [ ] **Comandera / KDS Pantalla de Cocina (`kitchen`):** Vista en tiempo real para cocineros con tiempos de preparación y despacho.
+- [x] **Comandera / KDS Pantalla de Cocina (`kitchen`):** Vista operativa con comandas, estados de preparación/despacho y refresco periódico.
 - [ ] **Reservas de Mesa (`bookings`):** Agenda de comensales y confirmaciones.
 
 #### Vertical Belleza / Salud / Servicios:

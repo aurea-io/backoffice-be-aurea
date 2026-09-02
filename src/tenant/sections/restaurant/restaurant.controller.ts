@@ -19,8 +19,10 @@ export class RestaurantController {
   @Post('tables') @RequireFeature(FeatureConstants.TABLES) @Roles(Role.OWNER, Role.MANAGER) createTable(@CurrentTenant() tenant: TenantContext, @Body() dto: CreateTableDto) { return this.restaurant.createTable(tenant.tenantId, dto); }
   @Patch('tables/:id') @RequireFeature(FeatureConstants.TABLES) @Roles(Role.OWNER, Role.MANAGER) updateTable(@CurrentTenant() tenant: TenantContext, @Param('id') id: string, @Body() dto: UpdateTableDto) { return this.restaurant.updateTable(tenant.tenantId, id, dto); }
   @Get('orders') @RequireFeature(FeatureConstants.ORDERS) listOrders(@CurrentTenant() tenant: TenantContext) { return this.restaurant.listOrders(tenant.tenantId); }
+  @Get('kitchen') @RequireFeature(FeatureConstants.KITCHEN) listKitchen(@CurrentTenant() tenant: TenantContext) { return this.restaurant.listKitchenOrders(tenant.tenantId); }
   @Post('orders') @RequireFeature(FeatureConstants.ORDERS) createOrder(@CurrentTenant() tenant: TenantContext, @Body() dto: CreateOrderDto) { return this.restaurant.createOrder(tenant.tenantId, dto); }
   @Patch('orders/:id') @RequireFeature(FeatureConstants.ORDERS) @Roles(Role.OWNER, Role.MANAGER) updateOrder(@CurrentTenant() tenant: TenantContext, @Param('id') id: string, @Body() dto: UpdateOrderDto) { return this.restaurant.updateOrder(tenant.tenantId, id, dto); }
+  @Patch('kitchen/orders/:id') @RequireFeature(FeatureConstants.KITCHEN) @Roles(Role.OWNER, Role.MANAGER, Role.STAFF) updateKitchenOrder(@CurrentTenant() tenant: TenantContext, @Param('id') id: string, @Body() dto: UpdateOrderDto) { return this.restaurant.updateOrder(tenant.tenantId, id, dto); }
 }
 
 @Controller('public/:publicId/restaurant/orders')

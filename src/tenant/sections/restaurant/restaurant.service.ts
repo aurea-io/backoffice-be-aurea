@@ -9,6 +9,7 @@ export class RestaurantService {
   createTable(tenantId: string, dto: CreateTableDto) { return this.prisma.restaurantTable.create({ data: { tenantId, number: dto.number, seats: dto.seats ?? 2 } }); }
   async updateTable(tenantId: string, id: string, dto: UpdateTableDto) { const table = await this.prisma.restaurantTable.findFirst({ where: { id, tenantId } }); if (!table) throw new NotFoundException('Mesa no encontrada.'); return this.prisma.restaurantTable.update({ where: { id }, data: { status: dto.status } }); }
   listOrders(tenantId: string) { return this.prisma.order.findMany({ where: { tenantId }, include: { table: true, lines: { include: { catalogItem: true } } }, orderBy: { createdAt: 'desc' } }); }
+  listKitchenOrders(tenantId: string) { return this.prisma.order.findMany({ where: { tenantId, status: { in: ['open' as any, 'preparing' as any, 'ready' as any] } }, include: { table: true, lines: { include: { catalogItem: true } } }, orderBy: { createdAt: 'asc' } }); }
   async createOrder(tenantId: string, dto: CreateOrderDto) {
     if (!dto.lines.length) throw new BadRequestException('El pedido debe tener al menos un ítem.');
     if (dto.tableId && !await this.prisma.restaurantTable.findFirst({ where: { id: dto.tableId, tenantId } })) throw new BadRequestException('La mesa no pertenece al comercio.');
