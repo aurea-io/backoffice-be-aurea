@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, MessageEvent, Param, Patch, Post, Query, Sse, UseGuards } from '@nestjs/common';
+import { Observable } from 'rxjs';
 import { Role } from '@prisma/client';
 import { TenantContextGuard } from '../../../core/guards/tenant.guard.js';
 import { RolesGuard } from '../../../core/guards/roles.guard.js';
@@ -20,6 +21,7 @@ export class RestaurantController {
   @Patch('tables/:id') @RequireFeature(FeatureConstants.TABLES) @Roles(Role.OWNER, Role.MANAGER) updateTable(@CurrentTenant() tenant: TenantContext, @Param('id') id: string, @Body() dto: UpdateTableDto) { return this.restaurant.updateTable(tenant.tenantId, id, dto); }
   @Get('tables/:id/qr') @RequireFeature(FeatureConstants.TABLES) getTableQr(@CurrentTenant() tenant: TenantContext, @Param('id') id: string) { return this.restaurant.tableQr(tenant.tenantId, id); }
   @Get('orders') @RequireFeature(FeatureConstants.ORDERS) listOrders(@CurrentTenant() tenant: TenantContext) { return this.restaurant.listOrders(tenant.tenantId); }
+  @Sse('events') @RequireFeature(FeatureConstants.ORDERS) events(@CurrentTenant() tenant: TenantContext): Observable<MessageEvent> { return new Observable((subscriber) => { let last = ''; const emit = async () => { try { const orders = await this.restaurant.listOrders(tenant.tenantId); const snapshot = JSON.stringify(orders.map((order) => ({ id: order.id, status: order.status, updatedAt: order.updatedAt }))); if (snapshot !== last) { last = snapshot; subscriber.next({ type: 'orders.updated', data: orders }); } } catch (error) { subscriber.error(error); } }; void emit(); const timer = setInterval(() => void emit(), 10000); return () => clearInterval(timer); }); }
   @Get('kitchen') @RequireFeature(FeatureConstants.KITCHEN) listKitchen(@CurrentTenant() tenant: TenantContext) { return this.restaurant.listKitchenOrders(tenant.tenantId); }
   @Post('orders') @RequireFeature(FeatureConstants.ORDERS) createOrder(@CurrentTenant() tenant: TenantContext, @Body() dto: CreateOrderDto) { return this.restaurant.createOrder(tenant.tenantId, dto); }
   @Patch('orders/:id') @RequireFeature(FeatureConstants.ORDERS) @Roles(Role.OWNER, Role.MANAGER) updateOrder(@CurrentTenant() tenant: TenantContext, @Param('id') id: string, @Body() dto: UpdateOrderDto) { return this.restaurant.updateOrder(tenant.tenantId, id, dto); }

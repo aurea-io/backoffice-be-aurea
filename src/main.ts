@@ -6,7 +6,7 @@ import { SystemConstants } from './core/constants/index.js';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { rawBody: true });
 
   // Global API route prefix
   app.setGlobalPrefix('api');
@@ -39,7 +39,7 @@ async function bootstrap() {
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-tenant-id'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-tenant-id', 'x-webhook-signature'],
   });
 
   const port = process.env.PORT ?? SystemConstants.DEFAULT_PORT;

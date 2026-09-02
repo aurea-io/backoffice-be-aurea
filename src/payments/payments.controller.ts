@@ -1,4 +1,6 @@
-import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Headers, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { createHmac, timingSafeEqual } from 'node:crypto';
+import type { Request } from 'express';
 import { TenantContextGuard } from '../core/guards/tenant.guard.js';
 import { FeatureGuard } from '../core/guards/feature.guard.js';
 import { RolesGuard } from '../core/guards/roles.guard.js';
@@ -22,5 +24,5 @@ export class PaymentsController {
 @Controller('payments/webhooks')
 export class PublicPaymentsController {
   constructor(private readonly payments: PaymentsService) {}
-  @Public() @Post(':provider') webhook(@Param('provider') provider: string, @Body() dto: PaymentWebhookDto) { return this.payments.applyWebhook(provider, dto); }
+  @Public() @Post(':provider') webhook(@Param('provider') provider: string, @Headers('x-webhook-signature') signature: string | undefined, @Req() request: Request & { rawBody?: Buffer }, @Body() dto: PaymentWebhookDto) { const secret = process.env[`WEBHOOK_SECRET_${provider.toUpperCase()}`]; if (secret) { const expected = createHmac('sha256', secret).update(request.rawBody || Buffer.from(JSON.stringify(dto))).digest('hex'); const supplied = (signature || '').replace(/^sha256=/, ''); if (!/^[a-f0-9]{64}$/i.test(supplied) || !timingSafeEqual(Buffer.from(expected, 'hex'), Buffer.from(supplied, 'hex'))) throw new BadRequestException('Firma de webhook inválida.'); } return this.payments.applyWebhook(provider, dto); }
 }

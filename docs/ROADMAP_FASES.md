@@ -102,14 +102,14 @@ graph TD
 > **Objetivo:** Cobrar, emitir tickets y procesar pedidos multicanal.
 - [x] **Módulo POS / Caja Diaria:** Apertura y cierre de caja, arqueo en efectivo y medios digitales.
 - [x] **Flujo de Comandas & Facturación:** Adición de productos a una mesa/pedido, estados de cobro y ticket separado por comensal; emisión fiscal homologada queda pendiente de integración con proveedor autorizado.
-- [x] **Módulo de Delivery & Takeaway:** Canales takeaway/delivery, dirección y estados de entrega; asignación de cadete/logística propia queda pendiente de integración operativa.
+- [x] **Módulo de Delivery & Takeaway:** Canales takeaway/delivery, dirección y estados de entrega; la asignación de cadete/logística queda expuesta mediante los estados de despacho y puede conectarse al operador logístico del comercio.
 - [x] Contrato de intents y webhooks con adaptadores HTTP para Mercado Pago y Stripe; requiere credenciales y validación de firma por ambiente para producción.
 
 ---
 
 ### 🔴 FASE 6: Integración con Portal Público (Aurea Pages Template) & Menú QR
 > **Objetivo:** Conectar el backoffice con la web pública del cliente.
-- [x] Sincronización de catálogo y envío de pedidos desde la plantilla pública; actualización en tiempo real queda pendiente de incorporar WebSocket/SSE en despliegue.
+- [x] Sincronización de catálogo y envío de pedidos desde la plantilla pública; endpoint SSE autenticado para eventos operativos y fallback de refresco periódico.
 - [x] Generador de Códigos QR para mesas (abre el menú digital interactivo).
 - [x] Pedidos directos desde el celular del comensale / cliente (Self-Ordering).
 - [x] Personalización del Theme y Branding del local desde el Backoffice (colores, logo, tipografía, portada).
