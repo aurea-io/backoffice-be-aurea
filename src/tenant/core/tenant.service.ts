@@ -206,11 +206,26 @@ export class TenantService {
     return this.tenantRepo.upsertMembership(tenantId, user.id, role, permissions ?? []);
   }
 
+  private isOwnerLikeMembership(membership: {
+    role?: Role | string | null;
+    roleKey?: string | null;
+    permissions?: string[];
+  }): boolean {
+    return Boolean(
+      membership.roleKey === 'tenant_owner' ||
+      membership.role === Role.OWNER ||
+      String(membership.role).toUpperCase() === 'OWNER' ||
+      membership.permissions?.includes('*') ||
+      membership.permissions?.includes('tenant:owner'),
+    );
+  }
+
   async updateMember(tenantId: string, userId: string, dto: UpdateMemberDto) {
     const membership = await this.tenantRepo.findMembership(tenantId, userId);
     if (!membership) throw new NotFoundException('Membresía no encontrada.');
-    if (membership.role === Role.OWNER && ((dto.role && dto.role !== Role.OWNER) || dto.isActive === false)) {
-      if (await this.tenantRepo.countActiveOwners(tenantId) <= 1) {
+    const isOwner = this.isOwnerLikeMembership(membership);
+    if (isOwner && ((dto.role && !this.isOwnerLikeMembership(dto)) || dto.isActive === false)) {
+      if ((await this.tenantRepo.countActiveOwners(tenantId)) <= 1) {
         throw new ConflictException('El tenant debe conservar al menos un OWNER activo.');
       }
     }
@@ -225,7 +240,7 @@ export class TenantService {
   async removeMember(tenantId: string, userId: string) {
     const membership = await this.tenantRepo.findMembership(tenantId, userId);
     if (!membership) throw new NotFoundException('Membresía no encontrada.');
-    if (membership.role === Role.OWNER && await this.tenantRepo.countActiveOwners(tenantId) <= 1) {
+    if (this.isOwnerLikeMembership(membership) && (await this.tenantRepo.countActiveOwners(tenantId)) <= 1) {
       throw new ConflictException('No se puede remover al último OWNER activo.');
     }
     await this.tenantRepo.removeMembership(tenantId, userId);
@@ -237,9 +252,13 @@ export class TenantService {
     const userPermissions = tenant.permissions ?? [];
     const activeFeatures = new Set(tenant.activeFeatures ?? []);
 
-    const isOwner = userRole === Role.OWNER;
-    const hasWildcard = userPermissions.includes('*') || userPermissions.includes('all');
-    const isUnrestricted = isOwner || hasWildcard;
+    const isUnrestricted = Boolean(
+      tenant.roleKey === 'tenant_owner' ||
+      userPermissions.includes('*') ||
+      userPermissions.includes('all') ||
+      userPermissions.includes('tenant:owner') ||
+      String(userRole).toUpperCase() === 'OWNER',
+    );
 
     // 1. Consultar exclusivamente la Base de Datos (ModuleCatalogEntry)
     const entries = await this.prisma.moduleCatalogEntry.findMany({
@@ -259,15 +278,6 @@ export class TenantService {
       return { sections: [] };
     }
 
-    // Estructuras intermedias para agrupar módulos y páginas desde la BD
-    const sectionNames: Record<string, string> = {
-      core: 'Principal',
-      services: 'Servicios',
-      commerce: 'Comercio',
-      gastronomy: 'Gastronomía',
-      crm: 'Gestión de Clientes',
-      marketing: 'Marketing & Lealtad',
-    };
     const sectionLabels = new Map<string, string>();
 
     interface PageAccumulator {
@@ -287,6 +297,9 @@ export class TenantService {
       const { sectionKey, pageKey, moduleKey, label, kind, permissions, metadata } = entry;
       const meta = (metadata as Record<string, any>) ?? {};
 
+      if (kind === 'section' && label && !sectionLabels.has(sectionKey)) {
+        sectionLabels.set(sectionKey, label);
+      }
       if (meta.sectionName && !sectionLabels.has(sectionKey)) {
         sectionLabels.set(sectionKey, meta.sectionName);
       }
@@ -297,18 +310,7 @@ export class TenantService {
       const pagesMap = sectionsMap.get(sectionKey)!;
 
       if (kind === 'module') {
-        const featureKey = meta.feature ?? (
-          sectionKey === 'core'
-            ? undefined
-            : pageKey === 'table-bookings'
-              ? 'tables'
-              : pageKey === 'pos'
-                ? 'pos_cashier'
-                : pageKey === 'coupons' || pageKey === 'loyalty'
-                  ? 'marketing'
-                  : pageKey
-        );
-
+        const featureKey = meta.feature ?? (sectionKey === 'core' ? undefined : pageKey);
         const pagePath = meta.path ?? `/${sectionKey}/${pageKey}`;
 
         const existingPage = pagesMap.get(pageKey);
@@ -390,9 +392,10 @@ export class TenantService {
 
       // Regla C: Podado (Pruning) de secciones vacías
       if (visiblePages.length > 0) {
+        const sectionName = sectionLabels.get(sectionKey) || (sectionKey.charAt(0).toUpperCase() + sectionKey.slice(1));
         filteredSections.push({
           id: sectionKey,
-          name: sectionLabels.get(sectionKey) ?? sectionNames[sectionKey] ?? sectionKey.toUpperCase(),
+          name: sectionName,
           pages: visiblePages,
         });
       }
