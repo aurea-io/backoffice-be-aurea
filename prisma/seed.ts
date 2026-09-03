@@ -83,9 +83,9 @@ async function main() {
 
   // 3. Persist platform scope membership (not a tenant role)
   const platformMembership = await prisma.platformMembership.upsert({
-    where: { userId_roleKey: { userId: adminUser.id, roleKey: 'SUPERADMIN' } },
+    where: { userId_roleKey: { userId: adminUser.id, roleKey: 'platform_owner' } },
     update: { isActive: true },
-    create: { userId: adminUser.id, roleKey: 'SUPERADMIN', isActive: true },
+    create: { userId: adminUser.id, roleKey: 'platform_owner', isActive: true },
   });
 
   console.log(`✅ Membresía de plataforma asignada: ${platformMembership.roleKey}`);

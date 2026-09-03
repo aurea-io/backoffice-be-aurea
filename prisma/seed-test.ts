@@ -12,7 +12,7 @@ const password = process.env.AUREA_TEST_PASSWORD || 'AureaTest!2026';
 const tenantSlug = 'de-santas';
 
 const users = [
-  { email: 'qa.superadmin@aurea.test', name: 'QA Superadmin', role: Role.SUPERADMIN, platform: true, permissions: ['*'] },
+  { email: 'qa.superadmin@aurea.test', name: 'QA Superadmin', role: Role.STAFF, platform: true, permissions: ['*'] },
   { email: 'qa.owner@aurea.test', name: 'QA Owner', role: Role.OWNER, permissions: ['*'] },
   { email: 'qa.manager@aurea.test', name: 'QA Manager', role: Role.MANAGER, permissions: ['catalog.read', 'catalog.write', 'bookings.read', 'bookings.write'] },
   { email: 'qa.staff@aurea.test', name: 'QA Staff', role: Role.STAFF, permissions: ['catalog.read', 'bookings.read'] },
@@ -80,7 +80,6 @@ async function main() {
       MANAGER: 'tenant_manager',
       STAFF: 'tenant_staff',
       CASHIER: 'tenant_cashier',
-      SUPERADMIN: 'tenant_owner',
     }[item.role];
     const user = await prisma.user.upsert({
       where: { email: item.email },
@@ -90,9 +89,9 @@ async function main() {
 
     if (item.platform) {
       await prisma.platformMembership.upsert({
-        where: { userId_roleKey: { userId: user.id, roleKey: 'SUPERADMIN' } },
+        where: { userId_roleKey: { userId: user.id, roleKey: 'platform_owner' } },
         update: { isActive: true },
-        create: { userId: user.id, roleKey: 'SUPERADMIN', isActive: true },
+        create: { userId: user.id, roleKey: 'platform_owner', isActive: true },
       });
     }
 
