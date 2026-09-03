@@ -15,15 +15,18 @@ import { ThemeModule } from './tenant/core/theme/theme.module.js';
 import { BootstrapModule } from './bootstrap/bootstrap.module.js';
 import { AccessModule } from './access/access.module.js';
 import { AuditModule } from './audit/audit.module.js';
-import { AppointmentsModule } from './tenant/sections/appointments/appointments.module.js';
-import { InventoryModule } from './tenant/sections/inventory/inventory.module.js';
-import { RestaurantModule } from './tenant/sections/restaurant/restaurant.module.js';
-import { PosModule } from './tenant/sections/pos/pos.module.js';
-import { ClientsModule } from './tenant/sections/clients/clients.module.js';
+import { BookingsModule } from './tenant/sections/services/bookings/bookings.module.js';
+import { InventoryModule } from './tenant/sections/commerce/inventory/inventory.module.js';
+import { OrdersModule } from './tenant/sections/commerce/orders/orders.module.js';
+import { PosModule } from './tenant/sections/commerce/pos/pos.module.js';
+import { TablesModule } from './tenant/sections/gastronomy/tables/tables.module.js';
+import { KitchenModule } from './tenant/sections/gastronomy/kitchen/kitchen.module.js';
+import { ClientsModule } from './tenant/sections/crm/clients/clients.module.js';
+import { LoyaltyModule } from './tenant/sections/marketing/loyalty/loyalty.module.js';
+import { CouponsModule } from './tenant/sections/marketing/coupons/coupons.module.js';
 import { SubscriptionGuard } from './core/guards/subscription.guard.js';
 import { PaymentsModule } from './payments/payments.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
-import { CouponsModule } from './coupons/coupons.module.js';
 
 @Module({
   imports: [
@@ -42,14 +45,17 @@ import { CouponsModule } from './coupons/coupons.module.js';
     BootstrapModule,
     AccessModule,
     AuditModule,
-    AppointmentsModule,
+    BookingsModule,
     InventoryModule,
-    RestaurantModule,
+    OrdersModule,
     PosModule,
+    TablesModule,
+    KitchenModule,
     ClientsModule,
+    LoyaltyModule,
+    CouponsModule,
     PaymentsModule,
     NotificationsModule,
-    CouponsModule,
   ],
   controllers: [AppController],
   providers: [
