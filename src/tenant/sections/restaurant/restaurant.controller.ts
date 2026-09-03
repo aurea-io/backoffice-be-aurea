@@ -1,52 +1,7 @@
-import { Body, Controller, Get, MessageEvent, Param, Patch, Post, Query, Sse, UseGuards } from '@nestjs/common';
-import { Observable } from 'rxjs';
-import { Role } from '@prisma/client';
-import { TenantContextGuard } from '../../../core/guards/tenant.guard.js';
-import { RolesGuard } from '../../../core/guards/roles.guard.js';
-import { PermissionsGuard } from '../../../core/guards/permissions.guard.js';
-import { Roles } from '../../../core/decorators/roles.decorator.js';
-import { RequireFeature, FeatureDomain, RequireRead, RequireWrite } from '../../../core/decorators/require-feature.decorator.js';
-import { FeatureGuard } from '../../../core/guards/feature.guard.js';
-import { FeatureConstants } from '../../../core/constants/index.js';
-import { Public } from '../../../core/decorators/public.decorator.js';
-import { CurrentTenant } from '../../../core/decorators/tenant-context.decorator.js';
-import type { TenantContext } from '../../../core/interfaces/context.interface.js';
-import { CreateOrderDto, CreateTableDto, UpdateOrderDto, UpdateTableDto, CreateTableBookingDto, UpdateTableBookingDto } from './dto/restaurant.dto.js';
-import { RestaurantService } from './restaurant.service.js';
-
-@Controller('restaurant')
-@UseGuards(TenantContextGuard, FeatureGuard, RolesGuard, PermissionsGuard)
-@FeatureDomain('restaurant')
-export class RestaurantController {
-  constructor(private readonly restaurant: RestaurantService) {}
-  @Get('tables') @RequireFeature(FeatureConstants.TABLES) @RequireRead() listTables(@CurrentTenant() tenant: TenantContext) { return this.restaurant.listTables(tenant.tenantId); }
-  @Post('tables') @RequireFeature(FeatureConstants.TABLES) @Roles(Role.OWNER, Role.MANAGER) @RequireWrite() createTable(@CurrentTenant() tenant: TenantContext, @Body() dto: CreateTableDto) { return this.restaurant.createTable(tenant.tenantId, dto); }
-  @Patch('tables/:id') @RequireFeature(FeatureConstants.TABLES) @Roles(Role.OWNER, Role.MANAGER) @RequireWrite() updateTable(@CurrentTenant() tenant: TenantContext, @Param('id') id: string, @Body() dto: UpdateTableDto) { return this.restaurant.updateTable(tenant.tenantId, id, dto); }
-  @Get('tables/:id/qr') @RequireFeature(FeatureConstants.TABLES) @RequireRead() getTableQr(@CurrentTenant() tenant: TenantContext, @Param('id') id: string) { return this.restaurant.tableQr(tenant.tenantId, id); }
-  @Get('orders') @RequireFeature(FeatureConstants.ORDERS) @RequireRead() listOrders(@CurrentTenant() tenant: TenantContext) { return this.restaurant.listOrders(tenant.tenantId); }
-  @Sse('events') @RequireFeature(FeatureConstants.ORDERS) @RequireRead() events(@CurrentTenant() tenant: TenantContext): Observable<MessageEvent> { return new Observable((subscriber) => { let last = ''; const emit = async () => { try { const orders = await this.restaurant.listOrders(tenant.tenantId); const snapshot = JSON.stringify(orders.map((order) => ({ id: order.id, status: order.status, updatedAt: order.updatedAt }))); if (snapshot !== last) { last = snapshot; subscriber.next({ type: 'orders.updated', data: orders }); } } catch (error) { subscriber.error(error); } }; void emit(); const timer = setInterval(() => void emit(), 10000); return () => clearInterval(timer); }); }
-  @Get('kitchen') @RequireFeature(FeatureConstants.KITCHEN) @RequireRead() listKitchen(@CurrentTenant() tenant: TenantContext) { return this.restaurant.listKitchenOrders(tenant.tenantId); }
-  @Post('orders') @RequireFeature(FeatureConstants.ORDERS) @RequireWrite() createOrder(@CurrentTenant() tenant: TenantContext, @Body() dto: CreateOrderDto) { return this.restaurant.createOrder(tenant.tenantId, dto); }
-  @Patch('orders/:id') @RequireFeature(FeatureConstants.ORDERS) @Roles(Role.OWNER, Role.MANAGER) @RequireWrite() updateOrder(@CurrentTenant() tenant: TenantContext, @Param('id') id: string, @Body() dto: UpdateOrderDto) { return this.restaurant.updateOrder(tenant.tenantId, id, dto); }
-  @Get('orders/:id/ticket') @RequireFeature(FeatureConstants.ORDERS) @RequireRead() getOrderTicket(@CurrentTenant() tenant: TenantContext, @Param('id') id: string) { return this.restaurant.getOrderTicket(tenant.tenantId, id); }
-  @Post('orders/:id/receipt') @RequireFeature(FeatureConstants.ORDERS) @Roles(Role.OWNER, Role.MANAGER) @RequireWrite() issueReceipt(@CurrentTenant() tenant: TenantContext, @Param('id') id: string) { return this.restaurant.issueFiscalReceipt(tenant.tenantId, id); }
-  @Patch('kitchen/orders/:id') @RequireFeature(FeatureConstants.KITCHEN) @Roles(Role.OWNER, Role.MANAGER, Role.STAFF) @RequireWrite() updateKitchenOrder(@CurrentTenant() tenant: TenantContext, @Param('id') id: string, @Body() dto: UpdateOrderDto) { return this.restaurant.updateOrder(tenant.tenantId, id, dto); }
-  @Get('bookings') @RequireFeature(FeatureConstants.BOOKINGS) @RequireRead() listBookings(@CurrentTenant() tenant: TenantContext, @Query('from') from?: string, @Query('to') to?: string) { return this.restaurant.listTableBookings(tenant.tenantId, from, to); }
-  @Post('bookings') @RequireFeature(FeatureConstants.BOOKINGS) @Roles(Role.OWNER, Role.MANAGER) @RequireWrite() createBooking(@CurrentTenant() tenant: TenantContext, @Body() dto: CreateTableBookingDto) { return this.restaurant.createTableBooking(tenant.tenantId, dto); }
-  @Patch('bookings/:id') @RequireFeature(FeatureConstants.BOOKINGS) @Roles(Role.OWNER, Role.MANAGER) @RequireWrite() updateBooking(@CurrentTenant() tenant: TenantContext, @Param('id') id: string, @Body() dto: UpdateTableBookingDto) { return this.restaurant.updateTableBooking(tenant.tenantId, id, dto); }
-}
-
-@Controller('public/:publicId/restaurant/orders')
-export class PublicRestaurantOrdersController {
-  constructor(private readonly restaurant: RestaurantService) {}
-  @Public()
-  @Post()
-  create(@Param('publicId') publicId: string, @Body() dto: CreateOrderDto) { return this.restaurant.createPublicOrder(publicId, dto); }
-}
-
-@Controller('public/:publicId/restaurant/bookings')
-export class PublicTableBookingsController {
-  constructor(private readonly restaurant: RestaurantService) {}
-  @Public() @Get('availability') availability(@Param('publicId') publicId: string, @Query('date') date: string, @Query('partySize') partySize = '2') { return this.restaurant.tableBookingAvailability(publicId, date, Number(partySize) || 2); }
-  @Public() @Post() create(@Param('publicId') publicId: string, @Body() dto: CreateTableBookingDto) { return this.restaurant.createTableBookingByPublicId(publicId, dto); }
-}
+export { TablesController } from './tables.controller.js';
+export { OrdersController } from './orders.controller.js';
+export { KitchenController } from './kitchen.controller.js';
+export {
+  PublicRestaurantOrdersController,
+  PublicTableBookingsController,
+} from './public-restaurant.controller.js';
