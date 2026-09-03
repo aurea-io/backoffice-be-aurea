@@ -1,5 +1,4 @@
 import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
-import { Role } from '@prisma/client';
 import { TenantRepository, UserRepository } from '../../repositories/index.js';
 import type { UpdateTenantSettingsDto } from './dto/update-settings.dto.js';
 import type { UpdateMemberDto } from './dto/update-member.dto.js';
@@ -193,7 +192,7 @@ export class TenantService {
     return { members, bookings, orders, inventoryItems: inventory._count.id, inventoryUnits: inventory._sum.quantity ?? 0, activeFeatures, revenueCents, averageTicketCents: orderDetails.length ? Math.round(revenueCents / orderDetails.length) : 0, ordersByChannel: channels, topProducts: [...products.values()].sort((a, b) => b.quantity - a.quantity).slice(0, 5), bookingsByStatus: bookingStatuses.map((entry) => ({ status: entry.status, count: entry._count._all })), dailySeries: Object.entries(daily).sort(([a], [b]) => a.localeCompare(b)).map(([date, value]) => ({ date, ...value })), ordersByHour: Object.entries(hourly).sort(([a], [b]) => a.localeCompare(b)).map(([hour, count]) => ({ hour, count })) };
   }
 
-  async addMember(tenantId: string, email: string, role: Role = Role.STAFF, permissions?: string[]) {
+  async addMember(tenantId: string, email: string, role?: string, permissions?: string[]) {
     const targetEmail = email.toLowerCase().trim();
     const user = await this.userRepo.findByEmail(targetEmail);
 
@@ -206,28 +205,16 @@ export class TenantService {
     return this.tenantRepo.upsertMembership(tenantId, user.id, role, permissions ?? []);
   }
 
-  private isOwnerLikeMembership(membership: {
-    role?: Role | string | null;
-    roleKey?: string | null;
-    permissions?: string[];
-  }): boolean {
-    return Boolean(
-      membership.roleKey === 'tenant_owner' ||
-      membership.role === Role.OWNER ||
-      String(membership.role).toUpperCase() === 'OWNER' ||
-      membership.permissions?.includes('*') ||
-      membership.permissions?.includes('tenant:owner'),
-    );
-  }
-
   async updateMember(tenantId: string, userId: string, dto: UpdateMemberDto) {
     const membership = await this.tenantRepo.findMembership(tenantId, userId);
     if (!membership) throw new NotFoundException('Membresía no encontrada.');
-    const isOwner = this.isOwnerLikeMembership(membership);
-    if (isOwner && ((dto.role && !this.isOwnerLikeMembership(dto)) || dto.isActive === false)) {
-      if ((await this.tenantRepo.countActiveOwners(tenantId)) <= 1) {
-        throw new ConflictException('El tenant debe conservar al menos un OWNER activo.');
-      }
+
+    // Check if this user is the tenant owner (via ownerId or owner wildcard)
+    const tenant = await this.tenantRepo.findById(tenantId);
+    const isOwner = tenant?.ownerId ? tenant.ownerId === userId : Boolean(membership.permissions?.includes('*') || membership.roleKey === 'tenant_owner');
+
+    if (isOwner && (dto.isActive === false)) {
+      throw new ConflictException('No se puede desactivar al propietario del tenant.');
     }
     return this.tenantRepo.updateMembership(tenantId, userId, {
       role: dto.role,
@@ -240,24 +227,25 @@ export class TenantService {
   async removeMember(tenantId: string, userId: string) {
     const membership = await this.tenantRepo.findMembership(tenantId, userId);
     if (!membership) throw new NotFoundException('Membresía no encontrada.');
-    if (this.isOwnerLikeMembership(membership) && (await this.tenantRepo.countActiveOwners(tenantId)) <= 1) {
-      throw new ConflictException('No se puede remover al último OWNER activo.');
+
+    const tenant = await this.tenantRepo.findById(tenantId);
+    const isOwner = tenant?.ownerId ? tenant.ownerId === userId : Boolean(membership.permissions?.includes('*') || membership.roleKey === 'tenant_owner');
+    if (isOwner) {
+      throw new ConflictException('No se puede remover al propietario del tenant. Transfiera la propiedad primero.');
     }
     await this.tenantRepo.removeMembership(tenantId, userId);
     return { success: true, message: 'Membresía revocada.' };
   }
 
   async getNavigation(tenant: TenantContext): Promise<NavigationResponseDto> {
-    const userRole = tenant.role;
     const userPermissions = tenant.permissions ?? [];
     const activeFeatures = new Set(tenant.activeFeatures ?? []);
 
     const isUnrestricted = Boolean(
-      tenant.roleKey === 'tenant_owner' ||
       userPermissions.includes('*') ||
       userPermissions.includes('all') ||
-      userPermissions.includes('tenant:owner') ||
-      String(userRole).toUpperCase() === 'OWNER',
+      userPermissions.includes('ALL') ||
+      userPermissions.includes('tenant:owner'),
     );
 
     // 1. Consultar exclusivamente la Base de Datos (ModuleCatalogEntry)

@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RoleConstants } from '../core/constants/index.js';
 
@@ -71,11 +70,11 @@ export class TenantRepository {
         slug: data.slug.trim(),
         vertical: data.vertical.trim(),
         settings: data.settings ?? {},
+        ownerId: data.ownerId ?? null,
         memberships: data.ownerId
           ? {
               create: {
                 userId: data.ownerId,
-                role: Role.OWNER,
                 permissions: [RoleConstants.ALL_PERMISSIONS],
               },
             }
@@ -151,7 +150,7 @@ export class TenantRepository {
   async upsertMembership(
     tenantId: string,
     userId: string,
-    role: Role,
+    role?: string,
     permissions: string[] = [RoleConstants.ALL_PERMISSIONS],
   ) {
     return this.prisma.tenantUser.upsert({
@@ -162,14 +161,14 @@ export class TenantRepository {
         },
       },
       update: {
-        role,
+        ...(role ? { role: role as any } : {}),
         permissions,
         isActive: true,
       },
       create: {
         tenantId,
         userId,
-        role,
+        ...(role ? { role: role as any } : {}),
         permissions,
         isActive: true,
       },
@@ -203,29 +202,15 @@ export class TenantRepository {
   }
 
   async updateMembership(tenantId: string, userId: string, data: {
-    role?: Role;
+    role?: string;
     roleKey?: string | null;
     permissions?: string[];
     isActive?: boolean;
   }) {
     return this.prisma.tenantUser.update({
       where: { tenantId_userId: { tenantId, userId } },
-      data,
+      data: data as any,
       include: { user: { select: { id: true, email: true, name: true, avatarUrl: true } } },
-    });
-  }
-
-  async countActiveOwners(tenantId: string) {
-    return this.prisma.tenantUser.count({
-      where: {
-        tenantId,
-        isActive: true,
-        OR: [
-          { roleKey: 'tenant_owner' },
-          { permissions: { has: '*' } },
-          { role: Role.OWNER },
-        ],
-      },
     });
   }
 
@@ -233,18 +218,17 @@ export class TenantRepository {
     return this.prisma.tenantUser.delete({ where: { tenantId_userId: { tenantId, userId } } });
   }
 
-  async findPlatformMembership(userId: string, roleKey = 'SUPERADMIN') {
+  async findPlatformMembership(userId: string, roleKey?: string) {
     return this.prisma.platformMembership.findFirst({
-      where: { userId, roleKey, isActive: true },
+      where: {
+        userId,
+        ...(roleKey ? { roleKey } : { roleKey: { not: 'platform_readonly' } }),
+        isActive: true,
+      },
     });
   }
 
-  /** Backward-compatible name; it now reads the platform scope only. */
-  async findSuperadminMembership(userId: string) {
-    return this.findPlatformMembership(userId);
-  }
-
-  async upsertPlatformMembership(userId: string, roleKey = 'SUPERADMIN') {
+  async upsertPlatformMembership(userId: string, roleKey: string) {
     return this.prisma.platformMembership.upsert({
       where: { userId_roleKey: { userId, roleKey } },
       update: { isActive: true },
