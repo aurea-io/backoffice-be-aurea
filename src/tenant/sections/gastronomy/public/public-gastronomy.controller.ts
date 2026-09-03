@@ -6,13 +6,15 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { Public } from '../../../core/decorators/public.decorator.js';
-import { CreateOrderDto, CreateTableBookingDto } from './dto/restaurant.dto.js';
-import { RestaurantService } from './restaurant.service.js';
+import { Public } from '../../../../core/decorators/public.decorator.js';
+import type { CreateTableBookingDto } from '../tables/dto/tables.dto.js';
+import type { CreateOrderDto } from '../orders/dto/orders.dto.js';
+import { TablesService } from '../tables/tables.service.js';
+import { OrdersService } from '../orders/orders.service.js';
 
 @Controller('public/:publicId/restaurant/orders')
 export class PublicRestaurantOrdersController {
-  constructor(private readonly restaurant: RestaurantService) {}
+  constructor(private readonly ordersService: OrdersService) {}
 
   @Public()
   @Post()
@@ -20,13 +22,13 @@ export class PublicRestaurantOrdersController {
     @Param('publicId') publicId: string,
     @Body() dto: CreateOrderDto,
   ) {
-    return this.restaurant.createPublicOrder(publicId, dto);
+    return this.ordersService.createPublicOrder(publicId, dto);
   }
 }
 
 @Controller('public/:publicId/restaurant/bookings')
 export class PublicTableBookingsController {
-  constructor(private readonly restaurant: RestaurantService) {}
+  constructor(private readonly tablesService: TablesService) {}
 
   @Public()
   @Get('availability')
@@ -35,7 +37,7 @@ export class PublicTableBookingsController {
     @Query('date') date: string,
     @Query('partySize') partySize = '2',
   ) {
-    return this.restaurant.tableBookingAvailability(
+    return this.tablesService.tableBookingAvailability(
       publicId,
       date,
       Number(partySize) || 2,
@@ -48,6 +50,6 @@ export class PublicTableBookingsController {
     @Param('publicId') publicId: string,
     @Body() dto: CreateTableBookingDto,
   ) {
-    return this.restaurant.createTableBookingByPublicId(publicId, dto);
+    return this.tablesService.createTableBookingByPublicId(publicId, dto);
   }
 }

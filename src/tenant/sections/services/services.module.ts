@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-import { BookingsModule } from '../services/bookings/bookings.module.js';
+import { BookingsModule } from './bookings/bookings.module.js';
 
 @Module({
   imports: [BookingsModule],
   exports: [BookingsModule],
 })
-export class AppointmentsModule {}
+export class ServicesModule {}

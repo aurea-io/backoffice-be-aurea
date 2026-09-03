@@ -1,25 +1,10 @@
 import { Module } from '@nestjs/common';
-import { AuthModule } from '../../../auth/auth.module.js';
-import { CouponsModule } from '../../../coupons/coupons.module.js';
-import { TablesController } from './tables.controller.js';
-import { OrdersController } from './orders.controller.js';
-import { KitchenController } from './kitchen.controller.js';
-import {
-  PublicRestaurantOrdersController,
-  PublicTableBookingsController,
-} from './public-restaurant.controller.js';
+import { GastronomyModule } from '../gastronomy/gastronomy.module.js';
 import { RestaurantService } from './restaurant.service.js';
 
 @Module({
-  imports: [AuthModule, CouponsModule],
-  controllers: [
-    TablesController,
-    OrdersController,
-    KitchenController,
-    PublicRestaurantOrdersController,
-    PublicTableBookingsController,
-  ],
+  imports: [GastronomyModule],
   providers: [RestaurantService],
-  exports: [RestaurantService],
+  exports: [GastronomyModule, RestaurantService],
 })
 export class RestaurantModule {}

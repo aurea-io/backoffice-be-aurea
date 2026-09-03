@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { FEATURE_DOMAIN_KEY, REQUIRE_ACTION_KEY } from '../../../core/decorators/require-feature.decorator.js';
 import { FeatureConstants } from '../../../core/constants/index.js';
-import { TablesController } from './tables.controller.js';
-import { OrdersController } from './orders.controller.js';
-import { KitchenController } from './kitchen.controller.js';
+import { TablesController } from './tables/tables.controller.js';
+import { OrdersController } from './orders/orders.controller.js';
+import { KitchenController } from './kitchen/kitchen.controller.js';
 
-describe('Restaurant Modular Controllers & Domain Isolation', () => {
+describe('Gastronomy Bounded Context Modules & Domain Isolation', () => {
   it('TablesController is annotated with FeatureConstants.TABLES domain', () => {
     const domain = Reflect.getMetadata(FEATURE_DOMAIN_KEY, TablesController);
     expect(domain).toBe(FeatureConstants.TABLES);

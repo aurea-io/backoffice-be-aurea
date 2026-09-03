@@ -9,37 +9,37 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
-import { TenantContextGuard } from '../../../core/guards/tenant.guard.js';
-import { RolesGuard } from '../../../core/guards/roles.guard.js';
-import { PermissionsGuard } from '../../../core/guards/permissions.guard.js';
-import { Roles } from '../../../core/decorators/roles.decorator.js';
+import { TenantContextGuard } from '../../../../core/guards/tenant.guard.js';
+import { RolesGuard } from '../../../../core/guards/roles.guard.js';
+import { PermissionsGuard } from '../../../../core/guards/permissions.guard.js';
+import { Roles } from '../../../../core/decorators/roles.decorator.js';
 import {
   FeatureDomain,
   RequireRead,
   RequireWrite,
-} from '../../../core/decorators/require-feature.decorator.js';
-import { FeatureGuard } from '../../../core/guards/feature.guard.js';
-import { FeatureConstants } from '../../../core/constants/index.js';
-import { CurrentTenant } from '../../../core/decorators/tenant-context.decorator.js';
-import type { TenantContext } from '../../../core/interfaces/context.interface.js';
+} from '../../../../core/decorators/require-feature.decorator.js';
+import { FeatureGuard } from '../../../../core/guards/feature.guard.js';
+import { FeatureConstants } from '../../../../core/constants/index.js';
+import { CurrentTenant } from '../../../../core/decorators/tenant-context.decorator.js';
+import type { TenantContext } from '../../../../core/interfaces/context.interface.js';
 import {
   CreateTableDto,
   UpdateTableDto,
   CreateTableBookingDto,
   UpdateTableBookingDto,
-} from './dto/restaurant.dto.js';
-import { RestaurantService } from './restaurant.service.js';
+} from './dto/tables.dto.js';
+import { TablesService } from './tables.service.js';
 
 @Controller('restaurant')
 @UseGuards(TenantContextGuard, FeatureGuard, RolesGuard, PermissionsGuard)
 @FeatureDomain(FeatureConstants.TABLES)
 export class TablesController {
-  constructor(private readonly restaurant: RestaurantService) {}
+  constructor(private readonly tablesService: TablesService) {}
 
   @Get('tables')
   @RequireRead()
   listTables(@CurrentTenant() tenant: TenantContext) {
-    return this.restaurant.listTables(tenant.tenantId);
+    return this.tablesService.listTables(tenant.tenantId);
   }
 
   @Post('tables')
@@ -49,7 +49,7 @@ export class TablesController {
     @CurrentTenant() tenant: TenantContext,
     @Body() dto: CreateTableDto,
   ) {
-    return this.restaurant.createTable(tenant.tenantId, dto);
+    return this.tablesService.createTable(tenant.tenantId, dto);
   }
 
   @Patch('tables/:id')
@@ -60,7 +60,7 @@ export class TablesController {
     @Param('id') id: string,
     @Body() dto: UpdateTableDto,
   ) {
-    return this.restaurant.updateTable(tenant.tenantId, id, dto);
+    return this.tablesService.updateTable(tenant.tenantId, id, dto);
   }
 
   @Get('tables/:id/qr')
@@ -69,7 +69,7 @@ export class TablesController {
     @CurrentTenant() tenant: TenantContext,
     @Param('id') id: string,
   ) {
-    return this.restaurant.tableQr(tenant.tenantId, id);
+    return this.tablesService.tableQr(tenant.tenantId, id);
   }
 
   @Get('bookings')
@@ -79,7 +79,7 @@ export class TablesController {
     @Query('from') from?: string,
     @Query('to') to?: string,
   ) {
-    return this.restaurant.listTableBookings(tenant.tenantId, from, to);
+    return this.tablesService.listTableBookings(tenant.tenantId, from, to);
   }
 
   @Post('bookings')
@@ -89,7 +89,7 @@ export class TablesController {
     @CurrentTenant() tenant: TenantContext,
     @Body() dto: CreateTableBookingDto,
   ) {
-    return this.restaurant.createTableBooking(tenant.tenantId, dto);
+    return this.tablesService.createTableBooking(tenant.tenantId, dto);
   }
 
   @Patch('bookings/:id')
@@ -100,6 +100,6 @@ export class TablesController {
     @Param('id') id: string,
     @Body() dto: UpdateTableBookingDto,
   ) {
-    return this.restaurant.updateTableBooking(tenant.tenantId, id, dto);
+    return this.tablesService.updateTableBooking(tenant.tenantId, id, dto);
   }
 }

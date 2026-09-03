@@ -11,32 +11,32 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { Role } from '@prisma/client';
-import { TenantContextGuard } from '../../../core/guards/tenant.guard.js';
-import { RolesGuard } from '../../../core/guards/roles.guard.js';
-import { PermissionsGuard } from '../../../core/guards/permissions.guard.js';
-import { Roles } from '../../../core/decorators/roles.decorator.js';
+import { TenantContextGuard } from '../../../../core/guards/tenant.guard.js';
+import { RolesGuard } from '../../../../core/guards/roles.guard.js';
+import { PermissionsGuard } from '../../../../core/guards/permissions.guard.js';
+import { Roles } from '../../../../core/decorators/roles.decorator.js';
 import {
   FeatureDomain,
   RequireRead,
   RequireWrite,
-} from '../../../core/decorators/require-feature.decorator.js';
-import { FeatureGuard } from '../../../core/guards/feature.guard.js';
-import { FeatureConstants } from '../../../core/constants/index.js';
-import { CurrentTenant } from '../../../core/decorators/tenant-context.decorator.js';
-import type { TenantContext } from '../../../core/interfaces/context.interface.js';
-import { CreateOrderDto, UpdateOrderDto } from './dto/restaurant.dto.js';
-import { RestaurantService } from './restaurant.service.js';
+} from '../../../../core/decorators/require-feature.decorator.js';
+import { FeatureGuard } from '../../../../core/guards/feature.guard.js';
+import { FeatureConstants } from '../../../../core/constants/index.js';
+import { CurrentTenant } from '../../../../core/decorators/tenant-context.decorator.js';
+import type { TenantContext } from '../../../../core/interfaces/context.interface.js';
+import { CreateOrderDto, UpdateOrderDto } from './dto/orders.dto.js';
+import { OrdersService } from './orders.service.js';
 
 @Controller('restaurant')
 @UseGuards(TenantContextGuard, FeatureGuard, RolesGuard, PermissionsGuard)
 @FeatureDomain(FeatureConstants.ORDERS)
 export class OrdersController {
-  constructor(private readonly restaurant: RestaurantService) {}
+  constructor(private readonly ordersService: OrdersService) {}
 
   @Get('orders')
   @RequireRead()
   listOrders(@CurrentTenant() tenant: TenantContext) {
-    return this.restaurant.listOrders(tenant.tenantId);
+    return this.ordersService.listOrders(tenant.tenantId);
   }
 
   @Post('orders')
@@ -45,7 +45,7 @@ export class OrdersController {
     @CurrentTenant() tenant: TenantContext,
     @Body() dto: CreateOrderDto,
   ) {
-    return this.restaurant.createOrder(tenant.tenantId, dto);
+    return this.ordersService.createOrder(tenant.tenantId, dto);
   }
 
   @Patch('orders/:id')
@@ -56,7 +56,7 @@ export class OrdersController {
     @Param('id') id: string,
     @Body() dto: UpdateOrderDto,
   ) {
-    return this.restaurant.updateOrder(tenant.tenantId, id, dto);
+    return this.ordersService.updateOrder(tenant.tenantId, id, dto);
   }
 
   @Get('orders/:id/ticket')
@@ -65,7 +65,7 @@ export class OrdersController {
     @CurrentTenant() tenant: TenantContext,
     @Param('id') id: string,
   ) {
-    return this.restaurant.getOrderTicket(tenant.tenantId, id);
+    return this.ordersService.getOrderTicket(tenant.tenantId, id);
   }
 
   @Post('orders/:id/receipt')
@@ -75,7 +75,7 @@ export class OrdersController {
     @CurrentTenant() tenant: TenantContext,
     @Param('id') id: string,
   ) {
-    return this.restaurant.issueFiscalReceipt(tenant.tenantId, id);
+    return this.ordersService.issueFiscalReceipt(tenant.tenantId, id);
   }
 
   @Sse('events')
@@ -86,7 +86,7 @@ export class OrdersController {
 
       const emitUpdate = async () => {
         try {
-          const orders = await this.restaurant.listOrders(tenant.tenantId);
+          const orders = await this.ordersService.listOrders(tenant.tenantId);
           const snapshot = JSON.stringify(
             orders.map((order) => ({
               id: order.id,
