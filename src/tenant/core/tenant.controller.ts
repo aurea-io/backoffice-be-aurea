@@ -35,6 +35,21 @@ export class TenantController {
     return this.tenantService.getNavigation(tenant);
   }
 
+  @Get('modules')
+  async getModules(@CurrentTenant() tenant: TenantContext) {
+    return this.tenantService.getTenantModules(tenant.tenantId);
+  }
+
+  @Patch('modules/:featureKey/toggle')
+  @Roles(Role.OWNER)
+  async toggleModule(
+    @CurrentTenant() tenant: TenantContext,
+    @Param('featureKey') featureKey: string,
+    @Body('isEnabled') isEnabled: boolean,
+  ) {
+    return this.tenantService.toggleTenantFeature(tenant.tenantId, featureKey, isEnabled);
+  }
+
   @Patch('settings')
   @Roles(Role.OWNER, Role.MANAGER)
   async updateSettings(

@@ -110,6 +110,125 @@ export class TenantService {
     });
   }
 
+  async getTenantModules(tenantId: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      include: { features: true },
+    });
+    if (!tenant) throw new NotFoundException('Tenant no encontrado.');
+
+    const featureStatusMap = new Map<string, boolean>();
+    tenant.features.forEach((f) => {
+      featureStatusMap.set(f.featureKey, f.isEnabled);
+    });
+
+    const standardModules = [
+      {
+        key: 'bookings',
+        name: 'Agenda y Reservas',
+        section: 'services',
+        description: 'Gestión de turnos, citas y disponibilidad horaria de profesionales.',
+        icon: 'Calendar',
+        category: 'Operaciones',
+      },
+      {
+        key: 'catalog',
+        name: 'Catálogo de Servicios y Productos',
+        section: 'commerce',
+        description: 'Gestión de servicios ofrecidos, productos de salón/tienda, precios y variantes.',
+        icon: 'ShoppingBag',
+        category: 'Ventas',
+      },
+      {
+        key: 'pos',
+        name: 'Punto de Venta / Caja',
+        section: 'commerce',
+        description: 'Terminal de cobro rápido, turnos de caja, arqueos ciegos y tickets.',
+        icon: 'DollarSign',
+        category: 'Ventas',
+      },
+      {
+        key: 'inventory',
+        name: 'Inventario y Existencias',
+        section: 'commerce',
+        description: 'Control de stock físico, movimientos de mercadería y alertas de stock bajo.',
+        icon: 'Package',
+        category: 'Ventas',
+      },
+      {
+        key: 'clients',
+        name: 'Gestión de Clientes (CRM)',
+        section: 'crm',
+        description: 'Ficha de clientes, historial de visitas y compras, preferencias y notas.',
+        icon: 'Users',
+        category: 'Clientes',
+      },
+      {
+        key: 'coupons',
+        name: 'Cupones y Promociones',
+        section: 'marketing',
+        description: 'Creación de cupones de descuento, topes de uso y fechas de vencimiento.',
+        icon: 'Tag',
+        category: 'Marketing',
+      },
+      {
+        key: 'loyalty',
+        name: 'Programa de Fidelización',
+        section: 'marketing',
+        description: 'Acumulación de puntos por compras y canje de recompensas para clientes fieles.',
+        icon: 'Award',
+        category: 'Marketing',
+      },
+      {
+        key: 'tables',
+        name: 'Mesas y Salón',
+        section: 'gastronomy',
+        description: 'Control de distribución de mesas, comensales y códigos QR de mesa.',
+        icon: 'Utensils',
+        category: 'Gastronomía',
+      },
+      {
+        key: 'kitchen',
+        name: 'Pantalla de Cocina (KDS)',
+        section: 'gastronomy',
+        description: 'Visualización y avance de comandas en tiempo real para cocina y barra.',
+        icon: 'ChefHat',
+        category: 'Gastronomía',
+      },
+    ];
+
+    return standardModules.map((mod) => ({
+      ...mod,
+      isEnabled: featureStatusMap.has(mod.key) ? featureStatusMap.get(mod.key)! : true,
+    }));
+  }
+
+  async toggleTenantFeature(tenantId: string, featureKey: string, isEnabled: boolean) {
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    if (!tenant) throw new NotFoundException('Tenant no encontrado.');
+
+    const feature = await this.prisma.tenantFeature.upsert({
+      where: {
+        tenantId_featureKey: {
+          tenantId,
+          featureKey,
+        },
+      },
+      update: { isEnabled },
+      create: {
+        tenantId,
+        featureKey,
+        isEnabled,
+      },
+    });
+
+    return {
+      featureKey: feature.featureKey,
+      isEnabled: feature.isEnabled,
+      message: isEnabled ? `Módulo ${featureKey} activado con éxito.` : `Módulo ${featureKey} desactivado.`,
+    };
+  }
+
   async getBrandingVersions(tenantId: string) {
     return this.prisma.tenantBrandingVersion.findMany({ where: { tenantId }, orderBy: { version: 'desc' }, take: 4 });
   }
