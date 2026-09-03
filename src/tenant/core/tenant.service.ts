@@ -415,8 +415,10 @@ export class TenantService {
 
   private async ensureCatalogSeeded(): Promise<void> {
     try {
-      const count = await this.prisma.moduleCatalogEntry.count();
-      if (count > 0) return;
+      const existing = await this.prisma.moduleCatalogEntry.findMany({
+        select: { key: true },
+      });
+      const existingKeys = new Set(existing.map((e) => e.key));
 
       const canonicalCatalog = [
         // Core
@@ -487,6 +489,8 @@ export class TenantService {
       ];
 
       for (const item of canonicalCatalog) {
+        if (existingKeys.has(item.key)) continue;
+
         await this.prisma.moduleCatalogEntry.upsert({
           where: { key: item.key },
           update: {},
