@@ -17,6 +17,7 @@ export interface TenantContext {
   roleKey?: string;
   permissions: string[];
   activeFeatures: string[];
+  settings?: Record<string, any>;
   maintenanceMode?: boolean;
   maintenanceMessage?: string | null;
   deprecatedAt?: Date | null;
