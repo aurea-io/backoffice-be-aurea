@@ -385,6 +385,7 @@ export class AuthService {
         activeFeatures: membership.tenant.features
           .filter((f: any) => f.isEnabled)
           .map((f: any) => f.featureKey),
+        settings: membership.tenant.settings ?? {},
         maintenanceMode: membership.tenant.maintenanceMode,
         maintenanceMessage: membership.tenant.maintenanceMessage,
         deprecatedAt: membership.tenant.deprecatedAt,

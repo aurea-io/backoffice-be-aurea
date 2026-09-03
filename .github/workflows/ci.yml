@@ -6,6 +6,8 @@ on:
 permissions:
   contents: read
   security-events: write
+  pull-requests: write
+  issues: write
 jobs:
   ci:
     uses: aurea-io/aurea-ci/.github/workflows/ci.yml@main

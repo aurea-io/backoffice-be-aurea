@@ -22,6 +22,7 @@ export class TenantService {
     }
 
     return {
+      tenantId: tenant.id,
       id: tenant.id,
       slug: tenant.slug,
       name: tenant.name,
@@ -89,7 +90,17 @@ export class TenantService {
           },
         });
       }
-      return updated;
+      return {
+        tenantId: updated.id,
+        id: updated.id,
+        slug: updated.slug,
+        name: updated.name,
+        vertical: updated.vertical,
+        settings: updated.settings ?? {},
+        activeFeatures: updated.features
+          .filter((f) => f.isEnabled)
+          .map((f) => f.featureKey),
+      };
     });
   }
 
