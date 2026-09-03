@@ -309,21 +309,7 @@ export class TenantService {
                   : pageKey
         );
 
-        const pagePath = meta.path ?? (
-          pageKey === 'dashboard'
-            ? '/dashboard'
-            : pageKey === 'theme'
-              ? '/settings'
-              : pageKey === 'billing'
-                ? '/settings/billing'
-                : pageKey === 'members'
-                  ? '/members'
-                  : pageKey === 'bookings'
-                    ? '/appointments'
-                    : pageKey === 'tables'
-                      ? '/restaurant'
-                      : `/${pageKey}`
-        );
+        const pagePath = meta.path ?? `/${sectionKey}/${pageKey}`;
 
         const existingPage = pagesMap.get(pageKey);
         pagesMap.set(pageKey, {
@@ -351,7 +337,7 @@ export class TenantService {
           pageAcc = {
             id: pageKey,
             name: label,
-            path: `/${pageKey}`,
+            path: `/${sectionKey}/${pageKey}`,
             permissions: [],
             modules: [],
           };
