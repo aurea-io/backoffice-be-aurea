@@ -26,6 +26,9 @@ import { FeatureConstants } from '../../../../core/constants/index.js';
 import type { TenantContext } from '../../../../core/interfaces/context.interface.js';
 import { Public } from '../../../../core/decorators/public.decorator.js';
 
+import { FeatureDomain } from '../../../../core/decorators/feature-domain.decorator.js';
+
+@FeatureDomain('commerce.catalog')
 @Controller('catalog')
 @UseGuards(TenantContextGuard, FeatureGuard, RolesGuard, PermissionsGuard)
 @RequireFeature(FeatureConstants.CATALOG)
