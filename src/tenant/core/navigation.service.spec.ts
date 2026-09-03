@@ -52,7 +52,9 @@ describe('TenantService.getNavigation (Database-driven & strictly filtered)', ()
 
     const tenantContext: TenantContext = {
       tenantId: 'tenant-123',
-      userId: 'user-1',
+      slug: 'test-tenant',
+      name: 'Test Tenant',
+      vertical: 'beauty',
       role: Role.OWNER,
       permissions: ['*'],
       activeFeatures: ['catalog', 'bookings'],
@@ -68,7 +70,9 @@ describe('TenantService.getNavigation (Database-driven & strictly filtered)', ()
 
     const beautyTenantContext: TenantContext = {
       tenantId: 'de-santas',
-      userId: 'user-owner',
+      slug: 'de-santas',
+      name: 'De Santas Studio',
+      vertical: 'beauty',
       role: Role.OWNER,
       permissions: ['*'],
       activeFeatures: ['catalog', 'bookings', 'social_hub'],
@@ -105,7 +109,9 @@ describe('TenantService.getNavigation (Database-driven & strictly filtered)', ()
 
     const staffContext: TenantContext = {
       tenantId: 'de-santas',
-      userId: 'user-staff',
+      slug: 'de-santas',
+      name: 'De Santas Studio',
+      vertical: 'beauty',
       role: Role.STAFF,
       permissions: ['appointments:read', 'bookings.view'],
       activeFeatures: ['catalog', 'bookings'],

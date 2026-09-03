@@ -237,8 +237,9 @@ export class TenantService {
     const userPermissions = tenant.permissions ?? [];
     const activeFeatures = new Set(tenant.activeFeatures ?? []);
 
-    const isOwnerOrManager = userRole === Role.OWNER || userRole === Role.MANAGER;
+    const isOwner = userRole === Role.OWNER;
     const hasWildcard = userPermissions.includes('*') || userPermissions.includes('all');
+    const isUnrestricted = isOwner || hasWildcard;
 
     // 1. Consultar exclusivamente la Base de Datos (ModuleCatalogEntry)
     const entries = await this.prisma.moduleCatalogEntry.findMany({
@@ -279,7 +280,8 @@ export class TenantService {
 
     const sectionsMap = new Map<string, Map<string, PageAccumulator>>();
 
-    // 2. Procesar entradas de la Base de Datos
+    // 2. Procesar entradas de la Base de Datos garantizando que la entrada 'module' sea la autoridad
+    // Primero, inicializar las páginas con sus módulos raíz
     for (const entry of entries) {
       const { sectionKey, pageKey, moduleKey, label, kind, permissions, metadata } = entry;
       const meta = (metadata as Record<string, any>) ?? {};
@@ -289,7 +291,7 @@ export class TenantService {
       }
       const pagesMap = sectionsMap.get(sectionKey)!;
 
-      if (!pagesMap.has(pageKey)) {
+      if (kind === 'module') {
         const featureKey = meta.feature ?? (
           sectionKey === 'core'
             ? undefined
@@ -318,20 +320,47 @@ export class TenantService {
                       : `/${pageKey}`
         );
 
+        const existingPage = pagesMap.get(pageKey);
         pagesMap.set(pageKey, {
           id: pageKey,
           name: meta.pageName ?? label,
           path: pagePath,
           feature: featureKey,
           permissions: permissions ?? [],
-          modules: [],
+          modules: existingPage ? existingPage.modules : [],
         });
       }
+    }
 
-      const pageAcc = pagesMap.get(pageKey)!;
+    // Luego, agregar las funciones hijas evaluando los permisos RBAC de cada módulo hijo
+    for (const entry of entries) {
+      const { sectionKey, pageKey, moduleKey, label, kind, permissions } = entry;
 
-      // Si es un módulo/función hijo, agregarlo a la lista de módulos de la página
       if (kind === 'function' || (kind === 'module' && moduleKey && moduleKey !== pageKey)) {
+        const pagesMap = sectionsMap.get(sectionKey);
+        if (!pagesMap) continue;
+
+        let pageAcc = pagesMap.get(pageKey);
+        if (!pageAcc) {
+          // Si no había entrada raíz 'module', inicializar con valores por defecto
+          pageAcc = {
+            id: pageKey,
+            name: label,
+            path: `/${pageKey}`,
+            permissions: [],
+            modules: [],
+          };
+          pagesMap.set(pageKey, pageAcc);
+        }
+
+        // Filtro RBAC para el módulo/función hijo
+        if (permissions && permissions.length > 0 && !isUnrestricted) {
+          const hasChildPerm = permissions.some((p) => userPermissions.includes(p));
+          if (!hasChildPerm) {
+            continue; // Submódulo no permitido para este colaborador -> omitir
+          }
+        }
+
         pageAcc.modules.push({
           key: moduleKey || entry.key,
           name: label,
@@ -351,8 +380,8 @@ export class TenantService {
           continue;
         }
 
-        // Regla B: Si requiere permisos y el colaborador no los posee -> OMITIR
-        if (page.permissions.length > 0 && !isOwnerOrManager && !hasWildcard) {
+        // Regla B: Si requiere permisos y el colaborador no es OWNER ni tiene wildcard -> OMITIR
+        if (page.permissions.length > 0 && !isUnrestricted) {
           const hasAnyPerm = page.permissions.some((p) => userPermissions.includes(p));
           if (!hasAnyPerm) {
             continue;
