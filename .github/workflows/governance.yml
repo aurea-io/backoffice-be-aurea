@@ -1,7 +1,7 @@
 name: Governance
 on:
   issues: { types: [opened, edited, reopened] }
-  pull_request: { types: [opened, edited, reopened, ready_for_review] }
+  pull_request: { types: [opened, edited, reopened, ready_for_review, synchronize] }
 permissions: { contents: read, issues: read, pull-requests: read }
 jobs:
   governance:
