@@ -5,6 +5,13 @@ import type { UpdateTenantSettingsDto } from './dto/update-settings.dto.js';
 import type { UpdateMemberDto } from './dto/update-member.dto.js';
 import { validateBranding } from '../../branding/branding.validator.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import type {
+  NavigationResponseDto,
+  NavigationSectionDto,
+  NavigationPageDto,
+  NavigationModuleDto,
+} from './dto/navigation.dto.js';
+import type { TenantContext } from '../../core/interfaces/context.interface.js';
 
 @Injectable()
 export class TenantService {
@@ -224,4 +231,183 @@ export class TenantService {
     await this.tenantRepo.removeMembership(tenantId, userId);
     return { success: true, message: 'Membresía revocada.' };
   }
+
+  async getNavigation(tenant: TenantContext): Promise<NavigationResponseDto> {
+    const userRole = tenant.role;
+    const userPermissions = tenant.permissions ?? [];
+    const activeFeatures = new Set(tenant.activeFeatures ?? []);
+
+    const isOwner = userRole === Role.OWNER;
+    const hasWildcard = userPermissions.includes('*') || userPermissions.includes('all');
+    const isUnrestricted = isOwner || hasWildcard;
+
+    // 1. Consultar exclusivamente la Base de Datos (ModuleCatalogEntry)
+    const entries = await this.prisma.moduleCatalogEntry.findMany({
+      where: {
+        status: 'active',
+        isArchived: false,
+      },
+      orderBy: [
+        { sectionKey: 'asc' },
+        { pageKey: 'asc' },
+        { kind: 'asc' },
+        { key: 'asc' },
+      ],
+    });
+
+    if (!entries || entries.length === 0) {
+      return { sections: [] };
+    }
+
+    // Estructuras intermedias para agrupar módulos y páginas desde la BD
+    const sectionNames: Record<string, string> = {
+      core: 'Principal',
+      services: 'Servicios',
+      commerce: 'Comercio',
+      gastronomy: 'Gastronomía',
+      crm: 'Gestión de Clientes',
+      marketing: 'Marketing & Lealtad',
+    };
+
+    interface PageAccumulator {
+      id: string;
+      name: string;
+      path: string;
+      feature?: string;
+      permissions: string[];
+      modules: NavigationModuleDto[];
+    }
+
+    const sectionsMap = new Map<string, Map<string, PageAccumulator>>();
+
+    // 2. Procesar entradas de la Base de Datos garantizando que la entrada 'module' sea la autoridad
+    // Primero, inicializar las páginas con sus módulos raíz
+    for (const entry of entries) {
+      const { sectionKey, pageKey, moduleKey, label, kind, permissions, metadata } = entry;
+      const meta = (metadata as Record<string, any>) ?? {};
+
+      if (!sectionsMap.has(sectionKey)) {
+        sectionsMap.set(sectionKey, new Map<string, PageAccumulator>());
+      }
+      const pagesMap = sectionsMap.get(sectionKey)!;
+
+      if (kind === 'module') {
+        const featureKey = meta.feature ?? (
+          sectionKey === 'core'
+            ? undefined
+            : pageKey === 'table-bookings'
+              ? 'tables'
+              : pageKey === 'pos'
+                ? 'pos_cashier'
+                : pageKey === 'coupons' || pageKey === 'loyalty'
+                  ? 'marketing'
+                  : pageKey
+        );
+
+        const pagePath = meta.path ?? (
+          pageKey === 'dashboard'
+            ? '/dashboard'
+            : pageKey === 'theme'
+              ? '/settings'
+              : pageKey === 'billing'
+                ? '/settings/billing'
+                : pageKey === 'members'
+                  ? '/members'
+                  : pageKey === 'bookings'
+                    ? '/appointments'
+                    : pageKey === 'tables'
+                      ? '/restaurant'
+                      : `/${pageKey}`
+        );
+
+        const existingPage = pagesMap.get(pageKey);
+        pagesMap.set(pageKey, {
+          id: pageKey,
+          name: meta.pageName ?? label,
+          path: pagePath,
+          feature: featureKey,
+          permissions: permissions ?? [],
+          modules: existingPage ? existingPage.modules : [],
+        });
+      }
+    }
+
+    // Luego, agregar las funciones hijas evaluando los permisos RBAC de cada módulo hijo
+    for (const entry of entries) {
+      const { sectionKey, pageKey, moduleKey, label, kind, permissions } = entry;
+
+      if (kind === 'function' || (kind === 'module' && moduleKey && moduleKey !== pageKey)) {
+        const pagesMap = sectionsMap.get(sectionKey);
+        if (!pagesMap) continue;
+
+        let pageAcc = pagesMap.get(pageKey);
+        if (!pageAcc) {
+          // Si no había entrada raíz 'module', inicializar con valores por defecto
+          pageAcc = {
+            id: pageKey,
+            name: label,
+            path: `/${pageKey}`,
+            permissions: [],
+            modules: [],
+          };
+          pagesMap.set(pageKey, pageAcc);
+        }
+
+        // Filtro RBAC para el módulo/función hijo
+        if (permissions && permissions.length > 0 && !isUnrestricted) {
+          const hasChildPerm = permissions.some((p) => userPermissions.includes(p));
+          if (!hasChildPerm) {
+            continue; // Submódulo no permitido para este colaborador -> omitir
+          }
+        }
+
+        pageAcc.modules.push({
+          key: moduleKey || entry.key,
+          name: label,
+        });
+      }
+    }
+
+    // 3. Filtrado Estricto de Seguridad en Servidor (Entitlements de Tenant + RBAC)
+    const filteredSections: NavigationSectionDto[] = [];
+
+    for (const [sectionKey, pagesMap] of sectionsMap.entries()) {
+      const visiblePages: NavigationPageDto[] = [];
+
+      for (const page of pagesMap.values()) {
+        // Regla A: Si requiere una feature comercial del tenant y no está activa -> OMITIR
+        if (page.feature && !activeFeatures.has(page.feature)) {
+          continue;
+        }
+
+        // Regla B: Si requiere permisos y el colaborador no es OWNER ni tiene wildcard -> OMITIR
+        if (page.permissions.length > 0 && !isUnrestricted) {
+          const hasAnyPerm = page.permissions.some((p) => userPermissions.includes(p));
+          if (!hasAnyPerm) {
+            continue;
+          }
+        }
+
+        visiblePages.push({
+          id: page.id,
+          name: page.name,
+          path: page.path,
+          feature: page.feature,
+          modules: page.modules,
+        });
+      }
+
+      // Regla C: Podado (Pruning) de secciones vacías
+      if (visiblePages.length > 0) {
+        filteredSections.push({
+          id: sectionKey,
+          name: sectionNames[sectionKey] ?? sectionKey.toUpperCase(),
+          pages: visiblePages,
+        });
+      }
+    }
+
+    return { sections: filteredSections };
+  }
 }
+

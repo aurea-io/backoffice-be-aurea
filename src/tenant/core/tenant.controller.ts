@@ -30,6 +30,11 @@ export class TenantController {
     return this.tenantService.getTenantContext(tenant.tenantId);
   }
 
+  @Get('navigation')
+  async getNavigation(@CurrentTenant() tenant: TenantContext) {
+    return this.tenantService.getNavigation(tenant);
+  }
+
   @Patch('settings')
   @Roles(Role.OWNER, Role.MANAGER)
   async updateSettings(
