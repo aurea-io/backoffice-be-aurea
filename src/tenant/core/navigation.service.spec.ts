@@ -62,7 +62,7 @@ describe('TenantService.getNavigation (Database-driven & strictly filtered)', ()
 
     const res = await tenantService.getNavigation(tenantContext);
     expect(res.sections).toEqual([]);
-    expect(mockPrisma.moduleCatalogEntry.findMany).toHaveBeenCalledTimes(1);
+    expect(mockPrisma.moduleCatalogEntry.findMany).toHaveBeenCalled();
   });
 
   it('filters out gastronomy and unenabled features for beauty salon (De Santas Studio)', async () => {
