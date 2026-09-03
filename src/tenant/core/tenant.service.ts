@@ -209,9 +209,9 @@ export class TenantService {
     const membership = await this.tenantRepo.findMembership(tenantId, userId);
     if (!membership) throw new NotFoundException('Membresía no encontrada.');
 
-    // Check if this user is the tenant owner (via ownerId)
+    // Check if this user is the tenant owner (via ownerId or owner wildcard)
     const tenant = await this.tenantRepo.findById(tenantId);
-    const isOwner = tenant?.ownerId === userId;
+    const isOwner = tenant?.ownerId ? tenant.ownerId === userId : Boolean(membership.permissions?.includes('*') || membership.roleKey === 'tenant_owner');
 
     if (isOwner && (dto.isActive === false)) {
       throw new ConflictException('No se puede desactivar al propietario del tenant.');
@@ -229,7 +229,8 @@ export class TenantService {
     if (!membership) throw new NotFoundException('Membresía no encontrada.');
 
     const tenant = await this.tenantRepo.findById(tenantId);
-    if (tenant?.ownerId === userId) {
+    const isOwner = tenant?.ownerId ? tenant.ownerId === userId : Boolean(membership.permissions?.includes('*') || membership.roleKey === 'tenant_owner');
+    if (isOwner) {
       throw new ConflictException('No se puede remover al propietario del tenant. Transfiera la propiedad primero.');
     }
     await this.tenantRepo.removeMembership(tenantId, userId);
@@ -243,6 +244,7 @@ export class TenantService {
     const isUnrestricted = Boolean(
       userPermissions.includes('*') ||
       userPermissions.includes('all') ||
+      userPermissions.includes('ALL') ||
       userPermissions.includes('tenant:owner'),
     );
 

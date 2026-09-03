@@ -220,7 +220,11 @@ export class TenantRepository {
 
   async findPlatformMembership(userId: string, roleKey?: string) {
     return this.prisma.platformMembership.findFirst({
-      where: { userId, ...(roleKey ? { roleKey } : {}), isActive: true },
+      where: {
+        userId,
+        ...(roleKey ? { roleKey } : { roleKey: { not: 'platform_readonly' } }),
+        isActive: true,
+      },
     });
   }
 
