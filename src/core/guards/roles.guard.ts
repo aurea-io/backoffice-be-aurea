@@ -5,10 +5,16 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Role } from '@prisma/client';
 import { ROLES_KEY } from '../decorators/roles.decorator.js';
 import { TenantRepository } from '../../repositories/index.js';
 
+/**
+ * RolesGuard resolves access based on:
+ * 1. PlatformMembership — any active platform membership grants platform-level access.
+ *    Read-only memberships allow GET/HEAD/OPTIONS only.
+ * 2. Tenant-level permissions — wildcard (*) or explicit permissions.
+ * 3. Role enum values from the DB — compared dynamically, never hardcoded.
+ */
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(
@@ -17,7 +23,7 @@ export class RolesGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const requiredRoles = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [
+    const requiredRoles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
@@ -33,23 +39,21 @@ export class RolesGuard implements CanActivate {
       throw new ForbiddenException('User is not authenticated.');
     }
 
-    // 1. Check if user is a global platform SUPERADMIN
-    const userSuperadminMembership = await (this.tenantRepo as any).findPlatformMembership?.(userId, 'SUPERADMIN') ?? await (this.tenantRepo as any).findSuperadminMembership?.(userId);
-    const platformOwner = await (this.tenantRepo as any).findPlatformMembership?.(userId, 'platform_owner');
-    const platformReadonly = await (this.tenantRepo as any).findPlatformMembership?.(userId, 'platform_readonly');
-    const isGlobalSuperadmin = Boolean(userSuperadminMembership || platformOwner);
+    // 1. Check if user has any active platform membership
+    const platformMembership = await this.tenantRepo.findPlatformMembership(userId);
 
-    if (requiredRoles.includes(Role.SUPERADMIN)) {
-      if (isGlobalSuperadmin) {
+    if (requiredRoles.includes('PLATFORM_ACCESS')) {
+      if (platformMembership) {
+        const isReadonly = platformMembership.roleKey === 'platform_readonly';
+        if (isReadonly) {
+          const method = String(request.method ?? 'GET').toUpperCase();
+          if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') return true;
+          throw new ForbiddenException('INSUFFICIENT_PERMISSION: platform_readonly is read-only.');
+        }
         return true;
       }
-      if (platformReadonly) {
-        const method = String(request.method ?? 'GET').toUpperCase();
-        if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') return true;
-        throw new ForbiddenException('INSUFFICIENT_PERMISSION: platform_readonly is read-only.');
-      }
       throw new ForbiddenException(
-        'Restricted access: AUREA Platform Superadmin privileges required.',
+        'Restricted access: Platform privileges required.',
       );
     }
 
@@ -61,20 +65,18 @@ export class RolesGuard implements CanActivate {
       );
     }
 
-    // OWNER has complete access within their tenant
+    // Wildcard permissions grant full access within the tenant
     const permissions = tenantContext.permissions ?? [];
     const hasAllPermissions = permissions.includes('*') || permissions.includes('ALL');
-    const isOwnerLike = tenantContext.role === Role.OWNER || tenantContext.roleKey === 'tenant_owner' || hasAllPermissions;
-    if (isOwnerLike) {
+    if (hasAllPermissions) {
       return true;
     }
 
-    const isManagerLike = tenantContext.role === Role.MANAGER ||
-      tenantContext.roleKey === 'tenant_manager' ||
-      permissions.includes('tenant:employees:manage');
-    const hasRole = requiredRoles.includes(tenantContext.role) ||
-      (requiredRoles.includes(Role.MANAGER) && isManagerLike) ||
-      (requiredRoles.includes(Role.STAFF) && Boolean(tenantContext.roleKey));
+    // Dynamic role comparison — roles come from the DB, not from hardcoded enums
+    const userRole = String(tenantContext.role ?? '').toUpperCase();
+    const hasRole = requiredRoles.some((r) => r.toUpperCase() === userRole) ||
+      (permissions.includes('tenant:employees:manage') && requiredRoles.some((r) => r.toUpperCase() === 'MANAGER'));
+
     if (!hasRole) {
       throw new ForbiddenException(
         `Permission denied: Your role (${tenantContext.role}) lacks required permissions. Required: [${requiredRoles.join(', ')}]`,

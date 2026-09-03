@@ -254,11 +254,11 @@ export class AuthService {
       throw new UnauthorizedException('User not found or inactive.');
     }
 
-    const platformMembership = await (this.tenantRepo as any).findPlatformMembership?.(userId) ?? await (this.tenantRepo as any).findSuperadminMembership?.(userId);
-    const isAureaSuperadmin = Boolean(platformMembership);
+    const platformMembership = await this.tenantRepo.findPlatformMembership(userId);
+    const hasPlatformAccess = Boolean(platformMembership);
 
     const currentContext = tenantId
-      ? await this.resolveTenantContext(user, tenantId, isAureaSuperadmin)
+      ? await this.resolveTenantContext(user, tenantId, hasPlatformAccess)
       : null;
 
     const allTenants = this.formatUserTenants(user.memberships);
@@ -269,7 +269,7 @@ export class AuthService {
         name: user.name,
         email: user.email,
         avatarUrl: user.avatarUrl,
-        isAureaSuperadmin,
+        hasPlatformAccess,
       },
       currentContext,
       allTenants,
@@ -368,7 +368,7 @@ export class AuthService {
 
   // ── Context Resolvers ────────────────────────────────────────────────────
 
-  private async resolveTenantContext(user: any, tenantId: string, isSuperadmin: boolean) {
+  private async resolveTenantContext(user: any, tenantId: string, hasPlatformAccess: boolean) {
     const membership = user.memberships.find(
       (m: any) => m.tenantId === tenantId && m.tenant.isActive,
     );
@@ -436,10 +436,8 @@ export class AuthService {
     const accessToken = await this.generateAccessToken(payload);
     const { rawRefreshToken, maxAgeMs } = await this.generateAndStoreRefreshToken(userId);
 
-    const platformMembership =
-      await (this.tenantRepo as any).findPlatformMembership?.(userId) ??
-      await (this.tenantRepo as any).findSuperadminMembership?.(userId);
-    const isAureaSuperadmin = Boolean(platformMembership);
+    const platformMembership = await this.tenantRepo.findPlatformMembership(userId);
+    const hasPlatformAccess = Boolean(platformMembership);
 
     return {
       accessToken,
@@ -449,7 +447,7 @@ export class AuthService {
         id: userId,
         email,
         name,
-        isAureaSuperadmin,
+        hasPlatformAccess,
       },
       tenants: this.formatUserTenants(memberships),
     };

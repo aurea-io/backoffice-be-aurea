@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TenantService } from './tenant.service.js';
-import { Role } from '@prisma/client';
 import type { TenantContext } from '../../core/interfaces/context.interface.js';
+import { Role } from '@prisma/client';
 
 describe('TenantService.getNavigation (Database-driven & strictly filtered)', () => {
   let tenantService: TenantService;
@@ -55,7 +55,7 @@ describe('TenantService.getNavigation (Database-driven & strictly filtered)', ()
       slug: 'test-tenant',
       name: 'Test Tenant',
       vertical: 'beauty',
-      role: Role.OWNER,
+      role: 'OWNER' as any,
       permissions: ['*'],
       activeFeatures: ['catalog', 'bookings'],
     };
@@ -73,7 +73,7 @@ describe('TenantService.getNavigation (Database-driven & strictly filtered)', ()
       slug: 'de-santas',
       name: 'De Santas Studio',
       vertical: 'beauty',
-      role: Role.OWNER,
+      role: 'OWNER' as any,
       permissions: ['*'],
       activeFeatures: ['catalog', 'bookings', 'social_hub'],
     };
