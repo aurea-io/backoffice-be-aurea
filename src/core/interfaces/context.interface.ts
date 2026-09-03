@@ -28,7 +28,7 @@ export interface AuthenticatedUser {
   id: string;
   email: string;
   name: string;
-  isAureaSuperadmin?: boolean;
+  hasPlatformAccess?: boolean;
 }
 
 export interface RequestWithContext extends Request {

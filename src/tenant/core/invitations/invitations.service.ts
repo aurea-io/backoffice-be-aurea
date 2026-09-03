@@ -70,9 +70,7 @@ export class InvitationsService {
     const invitationRole =
       !internal && membership?.role === Role.MANAGER && requestedRole === Role.OWNER
         ? Role.STAFF
-        : requestedRole === Role.SUPERADMIN
-          ? Role.STAFF
-          : requestedRole;
+        : requestedRole;
 
     const invitation = await db.invitation.create({
       data: {

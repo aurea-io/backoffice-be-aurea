@@ -145,6 +145,7 @@ model User {
   authTokens   AuthToken[] @relation("UserAuthTokens")
   platformMemberships PlatformMembership[]
   auditEvents AuditEvent[]
+  ownedTenants Tenant[] @relation("TenantOwner")
 }
 
 model Tenant {
@@ -152,6 +153,8 @@ model Tenant {
   slug         String   @unique
   name         String
   vertical     String   // e.g. "gastronomy", "beauty", "health", "realestate"
+  ownerId      String?  @db.ObjectId
+  owner        User?    @relation("TenantOwner", fields: [ownerId], references: [id])
   isActive     Boolean  @default(true)
   maintenanceMode Boolean @default(false)
   maintenanceMessage String?
