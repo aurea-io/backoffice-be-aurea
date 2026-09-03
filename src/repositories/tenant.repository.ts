@@ -216,7 +216,17 @@ export class TenantRepository {
   }
 
   async countActiveOwners(tenantId: string) {
-    return this.prisma.tenantUser.count({ where: { tenantId, role: Role.OWNER, isActive: true } });
+    return this.prisma.tenantUser.count({
+      where: {
+        tenantId,
+        isActive: true,
+        OR: [
+          { roleKey: 'tenant_owner' },
+          { permissions: { has: '*' } },
+          { role: Role.OWNER },
+        ],
+      },
+    });
   }
 
   async removeMembership(tenantId: string, userId: string) {
